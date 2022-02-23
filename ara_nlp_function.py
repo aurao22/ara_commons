@@ -1,3 +1,4 @@
+from tabnanny import verbose
 import pandas as pd
 import numpy as np
 import unicodedata
@@ -9,10 +10,10 @@ warnings.filterwarnings("ignore")
 
 from bs4 import BeautifulSoup
 from pathlib import Path  
-# import nltk
+import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords, wordnet
-from nltk import pos_tag, ne_chunk
+from nltk import pos_tag, ne_chunk, ngrams
 from nltk.stem.porter import PorterStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus.reader import WordListCorpusReader
@@ -77,6 +78,144 @@ def get_regex_tokens(verbose=0):
     pattern = re.compile(r"\b\w+\b")
     return pattern
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Typing function
+
+def is_verb(word, verbose=0):
+    '''
+    Maps the respective POS tag of a word to the format accepted by the lemmatizer of wordnet
+    
+    Args: word (str or list): Word to which the function is to be applied, string
+    Returns: POS tag or list[POS tag], readable for the lemmatizer of wordnet
+    '''
+    return is_type(word, wordnet.VERB, verbose=verbose)
+
+def is_type(word, testing_type, verbose=0):
+    '''
+    Maps the respective POS tag of a word to the format accepted by the lemmatizer of wordnet
+    
+    Args: word (str or list): Word to which the function is to be applied, string
+    Returns: POS tag or list[POS tag], readable for the lemmatizer of wordnet
+    '''
+    if isinstance(word, str):   
+        tag = get_wordnet_pos_func(word)
+        return tag == testing_type.upper()
+    return False
+
+"""
+CC coordinating conjunction
+CD cardinal digit
+DT determiner
+EX existential there (like: “there is” … think of it like “there exists”)
+FW foreign word
+IN preposition/subordinating conjunction
+JJ adjective ‘big’
+JJR adjective, comparative ‘bigger’
+JJS adjective, superlative ‘biggest’
+LS list marker 1)
+MD modal could, will
+NN noun, singular ‘desk’
+NNS noun plural ‘desks’
+NNP proper noun, singular ‘Harrison’
+NNPS proper noun, plural ‘Americans’
+PDT predeterminer ‘all the kids’
+POS possessive ending parent’s
+PRP$ possessive pronoun my, his, hers
+PRP personal pronoun I, he, she
+RB adverb very, silently,
+RBR adverb, comparative better
+RBS adverb, superlative best
+RP particle give up
+TO, to go ‘to’ the store.
+UH interjection, errrrrrrrm
+VB verb, base form take
+VBD verb, past tense took
+VBG verb, gerund/present participle taking
+VBN verb, past participle taken
+VBP verb, sing. present, non-3d take
+VBZ verb, 3rd person sing. present takes
+WDT wh-determiner which
+WP wh-pronoun who, what
+WP$ possessive wh-pronoun whose
+WRB wh-abverb where, when
+"""
+wordnet_pos_dict = { wordnet.ADJ : ["JJ", "JJR", 'JJS'],
+                     wordnet.NOUN : ["NN", "NNS", "NNP", "NNPS"],
+                     wordnet.VERB : ["MD", "VB", "VBD","VBG", "VBN", "VBP", "VBZ"] , # modal could, will, VB verb, base form take
+                     wordnet.ADV : ["RB", "RBR", "RBS"], # adverb very, silently, comparative better, superlative best
+                     "DIGIT"         : ["CD"],
+                     "PREP"      : ["IN", "TO", "WDT", "WP", "WRB"],
+                     "PRP"       : ["PRP"], # PRP personal pronoun I, he, she
+                     "PDT"       : ["PDT"], # predeterminer ‘all the kids’
+                     "POS"       : ["POS", "PRP$","WP$"], # POS possessive ending parent’s, PRP$ possessive pronoun my, his, hers
+                     "OTHER"     : ["CC", "DT", "EX", "FW", "LS", "RP", "UH"]
+             }
+
+
+def get_wordnet_pos_func(word, only_wordnet_types=False):
+    '''
+    Maps the respective POS tag of a word to the format accepted by the lemmatizer of wordnet
+    
+    Args: word (str or list): Word to which the function is to be applied, string
+    Returns: POS tag or list[POS tag], readable for the lemmatizer of wordnet
+    '''
+    if isinstance(word, str):
+        p_tag = pos_tag([word])[0][1]
+
+        for k, v in wordnet_pos_dict.items():
+            if p_tag in v:
+                if only_wordnet_types:
+                    if k != wordnet.ADJ and k != wordnet.NOUN and k != wordnet.VERB and k != wordnet.ADV: 
+                        return wordnet.NOUN
+                return k               
+        return ""
+    elif isinstance(word, list):
+        res = []
+        for w in word:
+            r = get_wordnet_pos_func(w)
+            res.append(r)
+        return res
+
+tag_dict = { "J": wordnet.ADJ,
+             "N": wordnet.NOUN,
+             "V": wordnet.VERB,
+             "R": wordnet.ADV
+             }
+
+def get_wordnet_pos_func_old(word):
+    '''
+    Maps the respective POS tag of a word to the format accepted by the lemmatizer of wordnet
+    
+    Args: word (str or list): Word to which the function is to be applied, string
+    Returns: POS tag or list[POS tag], readable for the lemmatizer of wordnet
+    '''
+    if isinstance(word, str):
+        p_tag = pos_tag([word])[0][1]
+
+        tag = p_tag[0].upper()
+
+        if p_tag.startswith('RB'):
+            """
+            RB adverb very, silently,
+            RBR adverb, comparative better
+            RBS adverb, superlative best
+            """
+            return wordnet.ADV
+        elif p_tag.startswith('MD'):
+            return wordnet.VERB
+        elif p_tag.startswith('ADJ') or p_tag.startswith('ADV'):
+            tag = p_tag[:3].upper()
+
+        res = tag_dict.get(tag, "")
+        return res
+    elif isinstance(word, list):
+        res = []
+        for w in word:
+            r = get_wordnet_pos_func(w)
+            res.append(r)
+        return res
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Cleanning function
 
@@ -88,7 +227,15 @@ def normalize_accented_chars(text):
             > Hello, is your name bob 55? Jean-Marie est 3eme ! Est-ce que tu l'as vu aujourd'hui ?e ou a i @ # &
     Returns: Clean string without accented characters
     '''
-    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore')
+    if isinstance(text, str):
+        return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8', 'ignore').strip()
+    elif isinstance(text, list):
+        res = []
+        for s in text:
+            res.append(normalize_accented_chars(s))
+        res = list(filter(None, res))
+        return res
+    
 
 def remove_html_tags_with_regex(text):
     '''
@@ -141,6 +288,45 @@ def remove_punctuation_on_tokens(tokens):
     words_res_list = [ word for word in tokens if word not in stopwords]
     return words_res_list
 
+
+def remove_types_on_tokens(tokens, types_to_remove=[], types_to_keep=[], verbose=0):
+    '''
+    Removes all punctuation from a string, if present
+    
+    Args:
+        text (str): String to which the function is to be applied, string
+    
+    Returns:
+        Clean string without punctuations
+    '''
+    if isinstance(tokens, str):
+        return remove_verbs_on_tokens(ara_tokenize(tokens, verbose=verbose))
+    else:    
+        if types_to_remove is not None and len(types_to_remove)>0:
+            types_to_remove = list(map(lambda x: x.upper(), types_to_remove))
+        elif types_to_keep is not None and len(types_to_keep) > 0:
+            types_to_remove = [ele for ele in list(wordnet_pos_dict.keys()) if ele not in types_to_keep]
+        words_res_list = [ word for word in tokens if get_wordnet_pos_func(word=word) not in types_to_remove ]
+        return words_res_list
+
+
+def remove_verbs_on_tokens(tokens, verbose=0):
+    '''
+    Removes all punctuation from a string, if present
+    
+    Args:
+        text (str): String to which the function is to be applied, string
+    
+    Returns:
+        Clean string without punctuations
+    '''
+    if isinstance(tokens, str):
+        return remove_verbs_on_tokens(ara_tokenize(tokens, verbose=verbose))
+    else:    
+        words_res_list = [ word for word in tokens if not is_verb(word=word, verbose=verbose) ]
+        return words_res_list
+
+
 def remove_irr_char_func(text):
     '''
     Removes all irrelevant characters (numbers and punctuation) from a string, if present
@@ -148,7 +334,17 @@ def remove_irr_char_func(text):
     Args: text (str): String to which the function is to be applied, string
     Returns: Clean string without irrelevant characters
     '''
-    return re.sub(get_regex_alphabetique_simple(), ' ', text)
+    if isinstance(text, str):
+        return re.sub(get_regex_alphabetique_simple(), ' ', text).strip()
+    elif isinstance(text, list):
+        res = []
+        for s in text:
+            res.append(remove_irr_char_func(s))
+        res = list(filter(None, res))
+        return res
+
+
+
 
 
 def remove_extra_whitespaces_func(text):
@@ -158,7 +354,13 @@ def remove_extra_whitespaces_func(text):
     Args: text (str): String to which the function is to be applied, string
     Returns: Clean string without extra whitespaces
     ''' 
-    return re.sub(get_regex_extra_spaces(), ' ', text).strip()
+    if isinstance(text, str):
+        return re.sub(get_regex_extra_spaces(), ' ', text).strip()
+    elif isinstance(text, list):
+        res = []
+        for s in text:
+            res.append(remove_extra_whitespaces_func(s))
+        return res
 
 
 def remove_digit_from_tokens(tokens):
@@ -183,17 +385,23 @@ def remove_digit_from_tokens(tokens):
 
 def ara_tokenize(text, use_reg=True, use_nlk=False, verbose=0):
     res = None
-    if use_reg:
-        res = re.findall(get_regex_tokens(), text)
 
-    if use_nlk:
-        res = word_tokenize(text)
+    if isinstance(text, str):
+        if use_reg:
+            res = re.findall(get_regex_tokens(), text.lower())
+        if use_nlk:
+            res = word_tokenize(text.lower())
+
+    elif isinstance(text, list):
+        res = [ ara_tokenize(sentence,use_reg=use_reg, use_nlk=use_nlk, verbose=verbose)  for sentence in text]
+        res = list(filter(None, res))
+
     return res
 
-def df_word_tokenize(df, text_col_name, token_col_name="word_tokenize"):
+def df_word_tokenize(df, text_col_name, token_col_name="word_tokenize", use_reg=True, use_nlk=False, verbose=0):
     df_token = df.copy()
 
-    df_token[token_col_name] = df_token[text_col_name].apply(lambda x: ara_tokenize(x.lower()))
+    df_token[token_col_name] = df_token[text_col_name].apply(lambda x: ara_tokenize(x, use_reg=use_reg, use_nlk=use_nlk, verbose=verbose))
     return df_token
 
 import spacy
@@ -268,7 +476,7 @@ def norm_stemming_func(text):
     return text
 
 
-def norm_lemm_func(text):
+def norm_lemm_func(text_param, pos=None, auto_type=False, is_text_list=False):
     '''
     Lemmatize tokens from string
     
@@ -278,16 +486,28 @@ def norm_lemm_func(text):
     Args: text (str or list[str] ): String to which the functions are to be applied, string
     Returns: str or list[str] with lemmatized words
     '''  
+    text = []
     words = None 
-    if isinstance(text, str):
-        words = word_tokenize(text)
-        text = ' '.join([WordNetLemmatizer().lemmatize(word) for word in words])
-    elif isinstance(text, list):
-        words = text 
-        text = [WordNetLemmatizer().lemmatize(word) for word in words]
+    if isinstance(text_param, str):
+        words = word_tokenize(text_param)
+        
+        if pos is not None and isinstance(pos, str) and len(pos) > 0:
+            text = ' '.join([WordNetLemmatizer().lemmatize(word, pos=pos.lower()) for word in words])
+        elif auto_type:
+            text = ' '.join([WordNetLemmatizer().lemmatize(word, pos=get_wordnet_pos_func(word, only_wordnet_types=True)) for word in words])
+        else:
+            text = ' '.join([WordNetLemmatizer().lemmatize(word) for word in words])
+    elif isinstance(text_param, list):
+        if is_text_list:
+            for t in text_param:
+                text.append(norm_lemm_func(text_param=t, pos=pos, auto_type=auto_type, is_text_list=is_text_list))
+        else:
+            words = text_param 
+            text = [norm_lemm_func(text_param=word, pos=pos, auto_type=auto_type, is_text_list=is_text_list) for word in words]
+        text = list(filter(None, text))
     return text
 
-def norm_lemm_v_func(text):
+def norm_lemm_v_func(text_param, is_text_list=False):
     '''
     Lemmatize tokens from string 
     
@@ -298,17 +518,10 @@ def norm_lemm_v_func(text):
     Args: text (str or list[str] ): String to which the functions are to be applied, string
     Returns: str or list[str] with lemmatized words
     '''  
-    words = None 
-    if isinstance(text, str):
-        words = word_tokenize(text)
-        text = ' '.join([WordNetLemmatizer().lemmatize(word, pos='v') for word in words])
-    elif isinstance(text, list):
-        words = text
-        text = [WordNetLemmatizer().lemmatize(word, pos='v') for word in words]
-    return text
+    return norm_lemm_func(text_param, pos='v', is_text_list=is_text_list)
 
 
-def norm_lemm_a_func(text):
+def norm_lemm_a_func(text_param, is_text_list=False):
     '''
     Lemmatize tokens from string
     
@@ -319,38 +532,10 @@ def norm_lemm_a_func(text):
     Args: text (str or list[str] ): String to which the functions are to be applied, string
     Returns: str or list[str] with lemmatized words
     ''' 
-    words = None 
-    if isinstance(text, str):
-        words = word_tokenize(text)
-        text = ' '.join([WordNetLemmatizer().lemmatize(word, pos='a') for word in words])
-    elif isinstance(text, list):
-        words = text
-        text = [WordNetLemmatizer().lemmatize(word, pos='a') for word in words]
-    return text
+    return norm_lemm_func(text_param, pos='a', is_text_list=is_text_list)
 
 
-def get_wordnet_pos_func(word):
-    '''
-    Maps the respective POS tag of a word to the format accepted by the lemmatizer of wordnet
-    
-    Args: word (str or list): Word to which the function is to be applied, string
-    Returns: POS tag or list[POS tag], readable for the lemmatizer of wordnet
-    '''
-    if isinstance(word, str):     
-        tag = pos_tag([word])[0][1][0].upper()
-        tag_dict = {"J": wordnet.ADJ,
-                    "N": wordnet.NOUN,
-                    "V": wordnet.VERB,
-                    "R": wordnet.ADV}
-        return tag_dict.get(tag, wordnet.NOUN)
-    elif isinstance(word, list):
-        res = []
-        for w in word:
-            r = get_wordnet_pos_func(w)
-            res.append(r)
-        return res
-
-def norm_lemm_POS_tag_func(text):
+def norm_lemm_POS_tag_func(text_param, is_text_list=False):
     '''
     Lemmatize tokens from string
     
@@ -371,31 +556,24 @@ def norm_lemm_POS_tag_func(text):
     return text
 
 
-def norm_lemm_v_a_func(text):
-    '''
-    Lemmatize tokens from string
-    
-    Step 1: Use word_tokenize() to get tokens from string
-    Step 2: Use WordNetLemmatizer() with POS tag 'v' to lemmatize the created tokens
-    Step 3: Use word_tokenize() to get tokens from generated string        
-    Step 4: Use WordNetLemmatizer() with POS tag 'a' to lemmatize the created tokens
-    
-    Args: text (str or list[str] ): String to which the functions are to be applied, string
-    Returns: str or list[str] with lemmatized words
-    '''
-    if isinstance(text, str):   
-        words1 = word_tokenize(text)
-        words2 = [WordNetLemmatizer().lemmatize(word, pos='v') for word in words1]
-        text2 = ' '.join([WordNetLemmatizer().lemmatize(word, pos='a') for word in words2])
-        return text2
-    elif isinstance(text, list):
-        words1 = text
-        words2 = [WordNetLemmatizer().lemmatize(word, pos='v') for word in words1]
-        text2 = [WordNetLemmatizer().lemmatize(word, pos='a') for word in words2]
-        return text2
+def token_to_sentence(token):
+    res = ""
+    if isinstance(token, list):
+        for item in token:
+            it = item
+            if isinstance(it, str):
+                res += ' '.join(token)
+                break
+
+            # # Pour gérer les liste de listes de phrases
+            res += ' '.join(it)
+            res += ' '
+    elif isinstance(token, str):
+        res = token
+    return res.strip()
 
 
-def calculate_corpus_tf_idf_with_scikitlearn(text_files, input='filename', stop_words='english', stack=True, with_total_row=False, verbose=0):
+def calculate_corpus_tf_idf_with_scikitlearn(text_files, input='filename', stop_words='english', stack=True, with_total_row=False, titles =None, verbose=0):
     """_summary_
 
     Args:
@@ -411,9 +589,10 @@ def calculate_corpus_tf_idf_with_scikitlearn(text_files, input='filename', stop_
     """
     tfidf_vectorizer = TfidfVectorizer(input=input, stop_words=stop_words)
     tfidf_vector = tfidf_vectorizer.fit_transform(text_files)
-    text_titles = [Path(text).stem for text in text_files]
-
-    tfidf_df = pd.DataFrame(tfidf_vector.toarray(), index=text_titles, columns=tfidf_vectorizer.get_feature_names())
+    if titles is None:
+        titles = [Path(text).stem for text in text_files]
+    
+    tfidf_df = pd.DataFrame(tfidf_vector.toarray(), index=titles, columns=tfidf_vectorizer.get_feature_names())
     if with_total_row: tfidf_df.loc['00_Document Frequency'] = (tfidf_df > 0).sum()
     if stack:
         tfidf_df = tfidf_df.stack().reset_index()
@@ -492,10 +671,51 @@ def remove_stopwords_func(text, language="french", sw=None):
             sw = list(stopwords.words(language))
         if isinstance(sw, WordListCorpusReader):
             sw = sw.words()
-        t = [token for token in text if token.lower() not in sw]
-        res = t
+        
+        res = []
+        for sentence in text:
+            token_temp = sentence.split()
+            t = [token.strip() for token in token_temp if token.lower() not in sw]
+            res.append(' '.join(t))
+        res = list(filter(None, res))
     return res
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                                              N_GRAMS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def ara_ngrams(text, min_n=1, max_n=3, pas_n=1, verbose=0, is_token=False):
+
+    tokens = []
+
+    if isinstance(text, str):
+        # Tokenize
+        unigrams = ara_tokenize(text)
+        if verbose:
+            print(f"{len(unigrams)} => unigrams found")
+        for i in range(max_n, min_n, -pas_n):
+            if len(unigrams) >= i:
+                gram = ['_'.join(w) for w in  ngrams(unigrams,n=i)]
+                if verbose:
+                    print(f"{len(gram)} => {i}grams found")
+                    if verbose > 1:
+                        print(gram)
+                tokens += gram
+                if i == 2:
+                    unigrams = []
+            elif verbose :
+                print(f"0 => {i}grams ({len(unigrams)} unigrams only)")
+
+        if min_n == 1:
+            tokens += unigrams
+    elif isinstance(text, list):
+        if is_token:
+            st = token_to_sentence(text)
+            tokens = ara_ngrams(st, min_n=min_n, max_n=max_n, pas_n=pas_n, verbose=verbose)
+        else:
+            for txt in text:
+                tokens += ara_ngrams(txt, min_n=min_n, max_n=max_n, pas_n=pas_n, verbose=verbose)
+   
+    return tokens
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -568,6 +788,21 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_length=4, max_words = 400, random_state = 8, collocations=False, normalize_plurals = True, width = 800, height= 400, verbose=0):
+    """_summary_
+
+    Args:
+        texte (str or list(str) or dict(str:val)): _description_
+        stopwords (list(str), optional): _description_. Defaults to None.
+        include_numbers (bool, optional): _description_. Defaults to False.
+        min_word_length (int, optional): _description_. Defaults to 4.
+        max_words (int, optional): _description_. Defaults to 400.
+        random_state (int, optional): _description_. Defaults to 8.
+        collocations (bool, optional): _description_. Defaults to False.
+        normalize_plurals (bool, optional): _description_. Defaults to True.
+        width (int, optional): _description_. Defaults to 800.
+        height (int, optional): _description_. Defaults to 400.
+        verbose (int, optional): _description_. Defaults to 0.
+    """
     # Instantiate a new wordcloud.
     wordcloud = WordCloud(
                 random_state = random_state,
@@ -578,6 +813,7 @@ def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_l
                 include_numbers = include_numbers,
                 min_word_length=min_word_length,
                 max_words = max_words )
+                
     if stopwords is not None:
         wordcloud = WordCloud(
                 random_state = random_state,
@@ -589,18 +825,25 @@ def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_l
                 min_word_length=min_word_length,
                 max_words = max_words,
                 stopwords = [])
-    if not isinstance(texte, str) and isinstance(texte, list):
-        # Transform the list of words back into a string 
-        texte  = ' '.join(texte)
 
-    # Apply the wordcloud to the text.
-    wordcloud.generate(texte)
+    if isinstance(texte, pd.Series):
+        texte = texte.to_dict()
+
+    if isinstance(texte, dict):
+        wordcloud.fit_words(texte)
+    else:
+        if not isinstance(texte, str) and isinstance(texte, list):
+            # Transform the list of words back into a string 
+            texte  = ' '.join(texte)
+
+        # Apply the wordcloud to the text.
+        wordcloud.generate(texte)
 
     # And plot
-    import matplotlib.pyplot as plt
     fig, ax = plt.subplots(1,1, figsize = (9,6))
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis("off")
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -740,10 +983,69 @@ def test_tfd_idf():
     base = draw_heatmap_tf_idf(tfidf_df.head(20), tdf_idf_col_name='tfidf', term_list=[], verbose=1)
     return base
 
+def test_ara_ngrams():
+    list_text = ['olive oil',
+                'knob butter',
+                'onion',
+                'sausagemeat skinned sausages',
+                'zest lemon',
+                'fresh white breadcrumbs',
+                'ready eat dried apricots',
+                'chestnut canned vacuum packed',
+                'fresh dried thyme',
+                'cranberries fresh frozen',
+                'boneless skinless chicken breasts',
+                'pack ready made shortcrust pastry',
+                'beaten egg glaze',
+                'butter',
+                'dark muscovado sugar',
+                'luxury dried fruit one includes peel glace cherries',
+                'zest juice orange',
+                'zest lemon',
+                'fl cherry brandy brandy',
+                'macadamia nut',
+                'eggs lightly beaten',
+                'almond',
+                'plain flour',
+                'baking powder',
+                'spice']
+    ara_ngrams(list_text, 1, 3, 1, 1)
 
+def test_remove_verbs_on_tokens():
+    tokens = ['vegetable','do','make','stock']
+    print(remove_verbs_on_tokens(tokens))
+
+    tokens = ['vegetable','do','make','stock']
+    print(remove_verbs_on_tokens(" ".join(tokens)))
+
+
+
+def test_norm_lemma():
+    temp = ["cooking apples chunks", "eating apple chunks", "onion sliced", "root ginger", "peppercorn", "granulated sugar", "cider vinegar", "cranberry",
+            "plain flour", "almonds", "baking powder", "bicarbonate soda", "cinnamon", "golden caster sugar", "marzipan diced", "pistachios", "toasted flaked almonds", "sultanasor raisins", "cherriesor cranberries", "apricots diced", "eggs", "unsalted butter melted cooled", "full fat natural yogurt", "almond extract", "icing sugar", "paper muffin cases used tulip cases"
+            ]
+    norm_lemm_func(temp, is_text_list=True)
+    norm_lemm_func(temp, auto_type=True, is_text_list=True)
+    norm_lemm_a_func(temp, is_text_list=True)
+    norm_lemm_v_func(temp, is_text_list=True)
+
+
+def test_get_type():
+    word_list = ['chestnut', 'canned', 'or', 'vacuum', 'packed', 'chopped', 'boneless', 'skinless', 'chicken', 'breasts', 'beaten', 'egg', 'to', 'glaze', 'butter', 'chopped', 'chop', 'eggs', 'beaten', 'beat', 'mixed', 'spice', 'g', 'luxury', 'mixed', 'fruit', 'oz', 'pecannuts']
+    for word in word_list:
+        print(word, "=", get_wordnet_pos_func(word))
 
 if __name__ == "__main__":
     
+    test_norm_lemma()
+    print("------------------------------------------------")
+
+    test_get_type()
+    print("------------------------------------------------")
+
+    test_remove_verbs_on_tokens()
+    print("------------------------------------------------")
+
     test_remove_stopwords_func()
     test ={'march': 4, '14': 11, 'be': 41, 'my': 1}
     print(words_by_weight(test))
@@ -759,3 +1061,8 @@ if __name__ == "__main__":
     df = co_occurrence(text, 2)
     print(df)
     print("------------------------------------------------")
+    test_ara_ngrams()
+    print("------------------------------------------------")
+
+    
+
