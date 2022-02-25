@@ -19,9 +19,13 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus.reader import WordListCorpusReader
 from nltk.probability import FreqDist
 from collections import defaultdict
-
-
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+try:
+    from sklearn.utils._testing import ignore_warnings
+except ImportError:
+    from sklearn.utils.testing import ignore_warnings
+import warnings
+from sklearn.exceptions import ConvergenceWarning
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                              FUNCTIONS
@@ -718,11 +722,212 @@ def ara_ngrams(text, min_n=1, max_n=3, pas_n=1, verbose=0, is_token=False):
     return tokens
 
 
+
+# ----------------------------------------------------------------------------------
+#                        MODELS : FIT AND TEST
+# ----------------------------------------------------------------------------------
+from sklearn.svm import LinearSVC
+import time
+
+def fit_and_test_models(model_list, X_train, Y_train, X_test, Y_test, y_column_name=None, verbose=0, scores=None, metrics=0, transformer=None):
+    
+    # Sauvegarde des modèles entrainés
+    modeldic = {}
+    yt = Y_test
+    ya = Y_train
+    # Sauvegarde des données
+    if scores is None:
+        scores = defaultdict(list)
+
+    if y_column_name is None:
+        y_column_name = ""
+    else:
+        yt = Y_test[y_column_name]
+        ya = Y_train[y_column_name]
+
+    scorelist = []
+    for mod_name, model in model_list.items():
+        try:
+            model_name = mod_name
+            if len(y_column_name) > 0:
+                model_name = y_column_name+"-"+model_name
+
+            if isinstance(model, LinearSVC):
+                if ya.nunique() <= 2:
+                    continue
+            scores["Class"].append(y_column_name)
+            scores["Model"].append(mod_name)
+            md, score_l = fit_and_test_a_model(model,model_name, X_train, ya, X_test, yt, verbose=verbose, metrics=metrics, transformer=transformer) 
+            modeldic[model_name] = md
+            scorelist.append(score_l)
+        except Exception as ex:
+            print(mod_name, "FAILED : ", ex)
+    
+    for score_l in scorelist:
+        for key, val in score_l.items():
+            scores[key].append(val)    
+    
+    return modeldic, scores
+
+@ignore_warnings(category=ConvergenceWarning)
+def fit_and_test_a_model(model, model_name, X_train, y_train, X_test, y_test, verbose=0, metrics=0, transformer=None):
+    t0 = time.time()
+    if verbose:
+        print(model_name, "X_train:", X_train.shape,"y_train:", y_train.shape, "X_test:", X_test.shape,"y_test:", y_test.shape)
+
+    if transformer is not None:
+        try:
+            X_train = transformer.fit_transform(X_train)
+            X_test = transformer.fit_transform(X_test)
+            if verbose:
+                print(model_name, "After transform : X_train:", X_train.shape,"y_train:", y_train.shape, "X_test:", X_test.shape,"y_test:", y_test.shape)
+        except:
+            pass
+    model.fit(X_train, y_train)
+    
+    r2 = model.score(X_test, y_test)
+    if verbose:
+        print(model_name+" "*(20-len(model_name))+":", round(r2, 3))
+    t_model = (time.time() - t0)
+        
+    # Sauvegarde des scores
+    modeldic_score = {"Modeli":model_name,
+                      "R2":r2,
+                      "fit time":time.strftime("%H:%M:%S", time.gmtime(t_model)),
+                      "fit seconde":t_model}
+    
+    # Calcul et Sauvegarde des métriques
+    if metrics > 0:
+        full=metrics > 1
+        t0 = time.time()
+        model_metrics = get_metrics_for_the_model(model, X_test, y_test, y_pred=None,scores=None, model_name=model_name, r2=r2, full_metrics=full, verbose=verbose, transformer=transformer)
+        t_model = (time.time() - t0)   
+        modeldic_score["metrics time"] = time.strftime("%H:%M:%S", time.gmtime(t_model))
+        modeldic_score["metrics seconde"] = t_model
+
+        for key, val in model_metrics.items():
+            if "R2" not in key and "Model" not in key:
+                modeldic_score[key] = val[0]
+
+    return model, modeldic_score
+
+
+from sklearn.metrics import *
+from sklearn.metrics import roc_curve, RocCurveDisplay, precision_recall_curve, PrecisionRecallDisplay
+
+from collections import defaultdict
+import pandas as pd
+from mlinsights.mlmodel import PredictableTSNE
+
+# ----------------------------------------------------------------------------------
+#                        MODELS : METRICS
+# ----------------------------------------------------------------------------------
+def get_metrics_for_the_model(model, X_test, y_test, y_pred,scores=None, model_name="", r2=None, full_metrics=False, verbose=0, transformer=None):
+    if scores is None:
+        scores = defaultdict(list)
+    scores["Model"].append(model_name)
+        
+    if r2 is None:
+        r2 = round(model.score(X_test, y_test),3)
+        
+    if y_pred is None:
+        t0 = time.time()
+        if transformer is not None and isinstance(transformer, PredictableTSNE):
+            y_pred = transformer.transforme(X_test)
+        elif transformer is not None and isinstance(model, PredictableTSNE):
+            y_pred = model.transforme(X_test)
+        else:
+            y_pred = model.predict(X_test)
+        t_model = (time.time() - t0)   
+        # Sauvegarde des scores
+        scores["predict time"].append(time.strftime("%H:%M:%S", time.gmtime(t_model)))
+        scores["predict seconde"].append(t_model)
+        
+    scores["R2"].append(r2)
+    scores["MAE"].append(mean_absolute_error(y_test, y_pred))
+    mse = mean_squared_error(y_test, y_pred)
+    scores["MSE"].append(mse)
+    scores["RMSE"].append(np.sqrt(mse))
+    scores["Mediane AE"].append(median_absolute_error(y_test, y_pred))
+
+    if full_metrics:
+        try:
+            y_prob = model.predict_proba(X_test)
+        
+            for metric in [brier_score_loss, log_loss]:
+                score_name = metric.__name__.replace("_", " ").replace("score", "").capitalize()
+                try:
+                    scores[score_name].append(metric(y_test, y_prob[:, 1]))
+                except Exception as ex:
+                    scores[score_name].append(np.nan)
+                    if verbose > 0:
+                        print("005", model_name, score_name, ex)
+        except Exception as ex:
+            if verbose > 0:
+                print("003", model_name, "Proba", ex)
+            scores['Brier  loss'].append(np.nan)
+            scores['Log loss'].append(np.nan)
+                
+        for metric in [f1_score, recall_score]:
+            score_fc_name = metric.__name__.replace("_", " ").replace("score", "").capitalize()
+            av_list = ['micro', 'macro', 'weighted']
+            if metric == 3:
+                av_list.append(None)
+            for average in av_list:
+                try:
+                    score_name = score_fc_name+str(average)
+                    scores[score_name].append(metric(y_test, y_pred, average=average))
+                except Exception as ex:
+                    if verbose > 0:
+                        print("005", model_name, score_name, ex)
+                    scores[score_name].append(np.nan)
+
+        # Roc auc  multi_class must be in ('ovo', 'ovr')   
+        for metric in [roc_auc_score]:
+            score_fc_name = metric.__name__.replace("_", " ").replace("score", "").capitalize()
+            for average in ['ovo', 'ovr']:
+                try:
+                    score_name = score_fc_name+str(average)
+                    scores[score_name].append(metric(y_test, y_pred,multi_class= average))
+                except Exception as ex:
+                    if verbose > 0:
+                        print("006", model_name, score_name, ex)
+                    scores[score_name].append(np.nan)
+    return scores
+
+def get_metrics_for_model(model_dic, X_test, y_test, full_metrics=0, verbose=0):
+    score_df = None
+    scores = defaultdict(list)
+    for model_name, (model, y_pred, r2) in model_dic.items():
+        scores = get_metrics_for_the_model(model, X_test, y_test, y_pred, scores,model_name=model_name, r2=r2, full_metrics=full_metrics, verbose=verbose)
+
+    score_df = pd.DataFrame(scores).set_index("Model")
+    score_df.round(decimals=3)
+    return score_df
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                              SENTIMENTS ANALYSIS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+from nltk.sentiment import SentimentIntensityAnalyzer
 
-# TODO
+def ara_polarity(df, sentence_col_name, dest_col_name, verbose=0):
+    df_nlp = df.copy()
+    df_nlp[dest_col_name] = df_nlp[sentence_col_name].apply(lambda x: SentimentIntensityAnalyzer().polarity_scores(x))
+    score_comp = dest_col_name+"_coumpound"
+    df_nlp[score_comp] = df_nlp[dest_col_name].apply(lambda x: x['compound'])
+    score_convert_name = dest_col_name+"_convert"
+    df_nlp[score_convert_name] = df_nlp[score_comp]
+    df_nlp.loc[df_nlp[score_comp] > 0, score_convert_name] = 1
+    df_nlp.loc[df_nlp[score_comp] == 0, score_convert_name] = -2
+    df_nlp.loc[df_nlp[score_comp] < 0, score_convert_name] = 0
+    df_nlp = df_nlp.drop(score_comp, axis=1)
+    if verbose:
+        # print the accuracy
+        diff = df_nlp[df_nlp[score_convert_name] != df_nlp["connotation"]]
+        good = df_nlp.shape[0] - diff.shape[0]
+        print(f"Accuracy = {round(good/df_nlp.shape[0], 3)} soit {good} found on {df_nlp.shape[0]}")
+    return df_nlp
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -787,7 +992,7 @@ def draw_heatmap_tf_idf(top_tfidf, document_col_name = "filename", tdf_idf_col_n
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_length=4, max_words = 400, random_state = 8, collocations=False, normalize_plurals = True, width = 800, height= 400, verbose=0):
+def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_length=4, max_words = 400, random_state = 8, collocations=False, normalize_plurals = True, width = 800, height= 400, ax=None, verbose=0):
     """_summary_
 
     Args:
@@ -839,10 +1044,14 @@ def draw_word_cloud(texte, stopwords = None, include_numbers = False, min_word_l
         # Apply the wordcloud to the text.
         wordcloud.generate(texte)
 
-    # And plot
-    fig, ax = plt.subplots(1,1, figsize = (9,6))
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis("off")
+    if ax is None:
+        # And plot
+        fig, ax = plt.subplots(1,1, figsize = (9,6))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis("off")
+    else:
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis("off")
 
 
 
