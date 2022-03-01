@@ -746,27 +746,30 @@ def fit_and_test_models(model_list, X_train, Y_train, X_test, Y_test, y_column_n
         ya = Y_train[y_column_name]
 
     scorelist = []
-    for mod_name, model in model_list.items():
-        try:
-            model_name = mod_name
-            if len(y_column_name) > 0:
-                model_name = y_column_name+"-"+model_name
+    try:
+        for mod_name, model in model_list.items():
+            try:
+                model_name = mod_name
+                if len(y_column_name) > 0:
+                    model_name = y_column_name+"-"+model_name
 
-            if isinstance(model, LinearSVC):
-                if ya.nunique() <= 2:
-                    continue
-            scores["Class"].append(y_column_name)
-            scores["Model"].append(mod_name)
-            md, score_l = fit_and_test_a_model(model,model_name, X_train, ya, X_test, yt, verbose=verbose, metrics=metrics, transformer=transformer) 
-            modeldic[model_name] = md
-            scorelist.append(score_l)
-        except Exception as ex:
+                if isinstance(model, LinearSVC):
+                    if ya.nunique() <= 2:
+                        continue
+                scores["Class"].append(y_column_name)
+                scores["Model"].append(mod_name)
+                md, score_l = fit_and_test_a_model(model,model_name, X_train, ya, X_test, yt, verbose=verbose, metrics=metrics, transformer=transformer) 
+                modeldic[model_name] = md
+                scorelist.append(score_l)
+            except Exception as ex:
+                print(mod_name, "FAILED : ", ex)
+        
+        for score_l in scorelist:
+            for key, val in score_l.items():
+                scores[key].append(val)    
+    except Exception as ex:
             print(mod_name, "FAILED : ", ex)
-    
-    for score_l in scorelist:
-        for key, val in score_l.items():
-            scores[key].append(val)    
-    
+
     return modeldic, scores
 
 @ignore_warnings(category=ConvergenceWarning)
