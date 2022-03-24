@@ -667,7 +667,7 @@ def remove_stopwords_func(text, language="french", sw=None):
     res = None
     # check in lowercase 
     if isinstance(text, str):
-        res_list = remove_stopwords_func(text.split(" "), language=language, sw=stopwords)
+        res_list = remove_stopwords_func(text.split(" "), language=language, sw=sw)
         text = ' '.join(res_list)    
         res = text
     elif isinstance(text, list):
