@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2, country_name_to_country_alpha3, convert_country_alpha2_to_continent_code
@@ -8,85 +9,144 @@ import pycountry
 # ---------------------------------------------------------------------------------------------
 #                               TRAITEMENT DES PAYS
 # ---------------------------------------------------------------------------------------------
-_correspondance_with_official_name = {
-                                     'Albanie':'Albania',
-                                     'null-australia': 'Australia',
-                                     'Bosnia I Hercegovina Bosnian': 'Bosnia And Herzegovina',
-                                     'Estados Unidos': 'United States', "Etats-unis": 'United States', "etats-unis": 'United States', 'vereinigte-staaten-von-amerika': 'United States',
-                                     'estados-unidos': 'United States', 'Vereinigte Staaten Von Amerika': 'United States',
-                                     'La Reunion': 'Reunion', 'la-reunion': 'Reunion',
-                                     "Palestinian territories": 'State of Palestine', 'Palestinian Territories': 'State of Palestine',
-                                     'algerie': 'Algeria',
-                                     'autriche': 'Austria',
-                                     'belgica': 'Belgium', 'belgie': 'Belgium', 'belgien': 'Belgium','belgio': 'Belgium', 'belgique': 'Belgium', 
-                                     'bulgarien':'Bulgaria','bulagria':'Bulgaria',
-                                     'birleşik-krallık-en-turkey': 'turkey',
-                                     'bosnia-i-hercegovina-bosnian': 'Bosnia And Herzegovina',
-                                     'brazil,pt': 'Brazil', 'cameroon': 'Cameroon', 'cameroun':'Cameroon','chile': 'Chile',
-                                     'κύπρο':'Cyprus',
-                                     'cote-d-ivoire': 'Ivory Coast', 'croatia': 'Croatia', 'croacia': 'Croatia', 
-                                     'česko':'Czech Republic','czech-republic':'Czech Republic', 'czech-repblik':'Czech Republic', 'czechy':'Czech Republic','czech-republi':'Czech Republic',
-                                     'democratic-democratic-republic-of-the-congo': 'Democratic Republic Of The Congo',
-                                     'democratic-republic-of-the-congo': 'Democratic Republic Of The Congo',
-                                     'danemark':'Denmark', 'dinamarca':'Denmark',
-                                     
-                                     'espa�a': 'Spain',                                   
-                                     'Europa': 'European Union', 'europe': 'European Union', 
-
-                                     'france': 'France', 'dom-tom': 'France','franca':'France','francia': 'France', 'francja': 'France', 'frankreich': 'France','frankrijk': 'France', 'franța': 'France',
-                                     'paris': 'France', 'ranska': 'France',
-                                     'guatemaltecos': 'Guatemala',
-                                     'germany': 'Germany', 'alemania': 'Germany', 'germania':'Germany', 'Niemcy': 'Germany','deutschland': 'Germany', 'east-germany': 'Germany', 'allemagne': 'Germany',
-                                     'guadalupe':'Guadeloupe',
-                                     'guinee':'Guinea', 
-                                     'hungria': 'Hungary', 'hungaria': 'Hungary',
-                                     'kosovo':'Kosovo', 'korea':"Democratic People's Republic of Korea",
-                                     'inda': 'India', 'indian-subcontinent': 'India',
-                                     'irland-en-de': 'Ireland','irlanda': 'Ireland', "irland": 'Ireland', 'ישראל':'Israel',
-                                     'italia': 'Italy', 'italien': 'Italy', 'italy': 'Italy', 'andria': 'Italy',
-                                     'latinoamerica':'Latin America', 'korea-한국어':'Korea',
-                                     'luxemburgo':'Luxembourg', 'iraqi-kurdistan':'Kurdistan irakien',
-                                     'maroc': 'Morocco', 'marruecos': 'Morocco','marokko': 'Morocco', 'Moroccov':'Morocco',
-                                     'المغرب': 'Morocco', 'morocco': 'Morocco', 'marruecos': 'Morocco',
-                                     'mexique': 'Mexico', 'mexixco': 'Mexico', 'tijuana-baja-california': 'Mexico',
-                                     'malay':'Malaysia',
-                                     'martinica':'Martinique', 'mongolia':'Mongolia',
-                                     'nan': np.nan, 
-                                     'niederlande': 'Netherlands','Paises Bajos': 'Netherlands', 'nederland': 'Netherlands','pays-bas': 'Netherlands',
-                                     'nouvelle-caledonie': 'New Caledonia', 'new-zealand-english':'New Zealand', "New Zealand":'New Zealand',
-                                     
-                                     'oslo':'Norway',
-                                     'palestinian-territories': 'State of Palestine','فلسطين':"State of Palestine",
-                                     
-                                     'worldwide':"Wordl", 
-                                     'poland': 'Poland', 'polonia': 'Poland', 'pologne': 'Poland', 'polska': 'Poland', 'polen': 'Poland','poland-polski': 'Poland', 'poland-romania': 'Poland', 
-                                     'portugal': 'Portugal', 
-                                     'polinesia-francesa':'French Polynesia', 'polynesie-francaise':'French Polynesia',
-                                     'republic-of-macedonia': 'North Macedonia', 'republic-of-the-congo': 'Congo', 'Congo (Kinshasa)': 'Congo','Congo (Brazzaville)': 'Congo',
-                                     'republica-dominicana-espanol':'Dominican Republic', 
-                                     'soviet-union':'Russian Federation','russia-русский':'Russian Federation', 'rusia':'Russian Federation',
-                                     "Royaume-uni": 'United Kingdom', 'reino-unido': 'United Kingdom', 'inglaterra': 'United Kingdom', 'England': 'United Kingdom',
-                                     'romanina':'Romania', 'romaniaă':'Romania', 
-                                     'wales': 'United Kingdom', 'serbie':'Serbia',
-                                     'slowakai':'Slovakia', 'eslovenia':'Slovenia', 
-                                     'espagne': 'Spain', 'spagna': 'Spain', 'españa': 'Spain', 'spain': 'Spain', 'espanha': 'Spain', 'spanien': 'Spain', 'Singapour':'Singapore', 'Svizzera': 'Switzerland',
-                                     'suisse': 'Switzerland', 'szwajcaria': 'Switzerland', 'svizzera': 'Switzerland', 'schweiz': 'Switzerland', 'suiza': 'Switzerland', 'svizzera': 'Switzerland',  
-                                     'suomi': 'Finland','Finlande': 'Finland',
-                                     'sverige': 'Sweden', 'schweden': 'Sweden', 'suecia': 'Sweden', 'swaziland': 'Sweden',
-                                     'swiss': 'Switzerland',
-                                     'slowenien':'Slovenia', 'slowakai':'Slovakia',
-                                     'the-bahamas': 'Bahamas', 'thailande':'Thailand',
-                                     'trinidad-tobagot-english': 'Trinidad And Tobago',
-                                     'tunisia': 'Tunisia', 'tunisie': 'Tunisia', 'تونس': 'Tunisia', 
-                                     'turkiye': 'Turkey',
-                                     'yugoslavia':'Yugoslavia', 'vatican-city':'Holy See',
-                                     'Tanzania':"United Republic of Tanzania",
-                                     'u-s-minor-outlying-islands':'US Minor Outlying Islands',
-                                     'unknown': np.nan, 'desconocido': np.nan, 'Desconocido': np.nan, 'mundo': np.nan, 'world': np.nan, 'worldwide': np.nan, 'world-s-coconut-trading-s-l': np.nan,
-                                     'الأردن': 'Jordan', 'لأردن': 'Jordan'}
-
-
-_correspondance_with_official_name_lower_keys = {}
+countries_possibilities = {
+                            "Albania":['albanie'],
+                            "Algeria":['algerie', 'algérie'],
+                            "Argentina":['argentine'],
+                            "Armenia":['arménie'],
+                            "Australia":['null-australia', 'australie'],
+                            "Austria":['autriche'],
+                            "Azerbaijan":['azerbaïdjan'],
+                            "Bahamas":['the-bahamas'],
+                            "Bahrain":['bahreïn'],
+                            "Belarus":['biélorussie'],
+                            "Belgium":['belgica', 'belgie', 'belgien', 'belgio', 'belgique'],
+                            "Benin":['bénin'],
+                            "Bhutan":['bhoutan'],
+                            "Bolivia":['bolivie'],
+                            "Bosnia And Herzegovina":['bosnia i hercegovina bosnian', 'bosnia-i-hercegovina-bosnian', 'bosnie-herzégovine', 'dominican republicvbosnia and herzegovina'],
+                            "Brazil":['brésil', 'brazil,pt'],
+                            "Bulgaria":['bulgarien', 'bulagria', 'bulgarie'],
+                            "Cambodia":['cambodge'],
+                            "Cameroon":['cameroon', 'cameroun'],
+                            "Central African Republic":['centrafrique'],
+                            "Chad":['tchad'],
+                            "Chile":['chile', 'chili'],
+                            "China":['chine'],
+                            "Colombia":['colombie'],
+                            "Comoros":['comores'],
+                            "Congo":['congo (rdc)', 'republic-of-the-congo', 'congo (kinshasa)', 'congo (brazzaville)'],
+                            "Croatia":['croatia', 'croacia', 'croatie'],
+                            "Cyprus":['κύπρο', 'chypre'],
+                            "Czech Republic":['česko', 'czech-republic', 'czech-repblik', 'czechy', 'czech-republi', 'république tchèque'],
+                            "Democratic People's Republic of Korea":['korea'],
+                            "Democratic Republic Of The Congo":['democratic-democratic-republic-of-the-congo', 'democratic-republic-of-the-congo'],
+                            "Denmark":['danemark', 'dinamarca'],
+                            "Dominican Republic":['republica-dominicana-espanol', 'république dominicaine'],
+                            "Ecuador":['équateur'],
+                            "Egypt":['égypte'],
+                            "El Salvador":['salvador'],
+                            "Estonia":['estonie'],
+                            "Ethiopia":['éthiopie'],
+                            "European Union":['europa', 'europe'],
+                            "Finland":['suomi', 'finlande'],
+                            "France":['france', 'dom-tom', 'franca', 'francia', 'francja', 'frankreich', 'frankrijk', 'franța', 'paris', 'ranska'],
+                            "French Polynesia":['polinesia-francesa', 'polynesie-francaise'],
+                            "Gambia":['gambie'],
+                            "Georgia":['géorgie'],
+                            "Germany":['germany', 'alemania', 'germania', 'niemcy', 'deutschland', 'east-germany', 'allemagne'],
+                            "Greece":['grèce'],
+                            "Guadeloupe":['guadalupe'],
+                            "Guatemala":['guatemaltecos'],
+                            "Guinea":['guinee', 'guinée'],
+                            "Haiti":['haïti'],
+                            "Holy See":['vatican-city'],
+                            "Hong Kong":['hong kong (chine)'],
+                            "Hungary":['hungria', 'hungaria', 'hongrie'],
+                            "Iceland":['islande'],
+                            "India":['inda', 'indian-subcontinent', 'inde'],
+                            "Indonesia":['indonésie'],
+                            "Ireland":['irland-en-de', 'irlanda', 'irland', 'irlande'],
+                            "Israel":['ישראל', 'israël'],
+                            "Italy":['italia', 'italien', 'italy', 'andria', 'italie'],
+                            "Ivory Coast":['cote-d-ivoire'],
+                            "Jamaica":['jamaïque'],
+                            "Japan":['japon'],
+                            "Jordan":['الأردن', 'لأردن', 'jordanie'],
+                            "Korea":['korea-한국어'],
+                            "Kosovo":['kosovo', 'kosovo'],
+                            "Kurdistan irakien":['iraqi-kurdistan'],
+                            "Kuwait":['koweït'],
+                            "Kyrgyzstan":['kirghizistan'],
+                            "Latin America":['latinoamerica'],
+                            "Latvia":['lettonie'],
+                            "Lebanon":['liban'],
+                            "Libya":['libye'],
+                            "Lithuania":['lituanie'],
+                            "Luxembourg":['luxemburgo'],
+                            "Malaysia":['malay', 'malaisie'],
+                            "Malta":['malte'],
+                            "Martinique":['martinica'],
+                            "Mauritania":['mauritanie'],
+                            "Mauritius":['maurice'],
+                            "Mexico":['mexique', 'mexixco', 'tijuana-baja-california'],
+                            "Moldova":['moldavie'],
+                            "Mongolia":['mongolia', 'mongolie'],
+                            "Montenegro":['monténégro'],
+                            "Morocco":['maroc', 'marruecos', 'marokko', 'moroccov', 'المغرب', 'morocco'],
+                            "Myanmar":['myanmar (birmanie)'],
+                            "Namibia":['namibie'],
+                            "Nepal":['népal'],
+                            "Netherlands":['niederlande', 'paises bajos', 'nederland', 'pays-bas'],
+                            "New Caledonia":['nouvelle-caledonie'],
+                            "New Zealand":['new-zealand-english', 'new zealand', 'nouvelle-zélande'],
+                            "North Macedonia":['republic-of-macedonia', 'north macedonia'],
+                            "Northern Cyprus":['chypre du nord'],
+                            "Norway":['oslo', 'norvège'],
+                            "Peru":['pérou'],
+                            "Poland":['poland', 'polonia', 'pologne', 'polska', 'polen', 'poland-polski', 'poland-romania'],
+                            "Portugal":['portugal'],
+                            "Reunion":['la reunion', 'la-reunion'],
+                            "Romania":['romanina', 'romaniaă', 'roumanie'],
+                            "Russian Federation":['soviet-union', 'russia-русский', 'rusia', 'russie'],
+                            "Saudi Arabia":['arabie saoudite'],
+                            "Senegal":['sénégal'],
+                            "Serbia":['serbie'],
+                            "Singapore":['singapour'],
+                            "Slovakia":['slowakai', 'slovaquie', 'slovénie'],
+                            "Slovenia":['slowenien', 'eslovenia'],
+                            "Somalia":['somalie'],
+                            "South Africa":['afrique du sud'],
+                            "South Korea":['corée du sud'],
+                            "South Sudan":['soudan du sud'],
+                            "Spain":['espa�a', 'espagne', 'spagna', 'españa', 'spain', 'espanha', 'spanien'],
+                            "State of Palestine":['palestinian territories', 'palestinian territories', 'palestinian-territories', 'فلسطين'],
+                            "Sudan":['soudan'],
+                            "Sweden":['sverige', 'schweden', 'suecia', 'swaziland', 'suède'],
+                            "Switzerland":['svizzera', 'suisse', 'szwajcaria', 'svizzera', 'schweiz', 'suiza', 'swiss'],
+                            "Syria":['syrie'],
+                            "Taiwan":['taïwan'],
+                            "Tajikistan":['tadjikistan'],
+                            "Tanzania":['tanzanie'],
+                            "Thailand":['thailande', 'thaïlande'],
+                            "Trinidad And Tobago":['trinidad-tobagot-english', 'trinité-et-tobago', 'trinidad & tobago'],
+                            "Tunisia":['tunisia', 'tunisie', 'تونس'],
+                            "Turkey":['birleşik-krallık-en-turkey', 'turquie', 'turkiye'],
+                            "Turkmenistan":['turkménistan'],
+                            "US Minor Outlying Islands":['u-s-minor-outlying-islands'],
+                            "Uganda":['ouganda'],
+                            "United Arab Emirates":['émirats arabes unis'],
+                            "United Kingdom":['royaume-uni', 'reino-unido', 'inglaterra', 'england', 'wales'],
+                            "United Republic of Tanzania":['tanzania'],
+                            "United States":['estados unidos', 'etats-unis', 'etats-unis', 'vereinigte-staaten-von-amerika', 'porto rico (états-unis)', 'états-unis', 'estados-unidos', 'vereinigte staaten von amerika'],
+                            "Uzbekistan":['ouzbékistan'],
+                            "Vietnam":['viêt nam'],
+                            "Yemen":['yémen'],
+                            "Yugoslavia":['yugoslavia'],
+                            "Zambia":['zambie']
+                            }
+_correspondance_with_official_name_lower_keys = defaultdict(list)
+                            
 
 # ---------------------------------------------------------------------------------------------
 # Correction des pays qui sont en erreur dans la librairie
@@ -149,25 +209,29 @@ countries_dict = {}
 # ---------------------------------------------------------------------------------------------
 #                          Functions pour les données géographiques
 # ---------------------------------------------------------------------------------------------
-_dic_alpha2 = {'antigua and barbuda': ('AG', 'NA'), 
-                     'bosnia and herzegovina': ('BA', 'EU'), 
-                     'caribbean netherlands': ('NL', 'NA'), 
-                     'cote d ivoire': ('CI', 'AF'), 
-                     'curacao': ('CW', 'NA'), 
-                     'united kingdom': ('GB', 'EU'), 
-                     'democratic republic of the congo': ('CD', 'AF'), 
-                     'european union': ('FR', 'EU'), 
-                     'isle of man': ('IM', 'EU'), 
-                     'republic of macedonia': ('MK', 'EU'), 
-                     'north macedonia': ('MK', 'EU'), 
-                     'reunion': ('RE', 'AF'), 
-                     'trinidad and tobago': ('TT', 'SA'), 
-                     'virgin islands of the united states': ('VI', 'NA'), 
-                     'saint kitts and nevis': ('KN', 'NA'), 
-                     'saint pierre and miquelon': ('PM', 'NA'), 
-                     'sint maarten': ('SX', 'NA'), 
-                     'state of palestine': ('PS', 'AS'), 
-                     'dominican republic': ('DO', 'SA')}
+_dic_alpha2 = {
+                'antigua and barbuda': ('AG', 'NA'), 
+                'bosnia and herzegovina': ('BA', 'EU'), 
+                'caribbean netherlands': ('NL', 'NA'), 
+                'cote d ivoire': ('CI', 'AF'), 
+                'curacao': ('CW', 'NA'), 
+                'Czech Republic' : ('CZ', 'EU'), # Czech Republic nan
+                'czech republic' : ('CZ', 'EU'), # Czech Republic nan
+                'democratic republic of the congo': ('CD', 'AF'), 
+                'dominican republic': ('DO', 'SA'),
+                'european union': ('FR', 'EU'), 
+                'isle of man': ('IM', 'EU'), 
+                'north macedonia': ('MK', 'EU'), 
+                'republic of macedonia': ('MK', 'EU'), 
+                'reunion': ('RE', 'AF'), 
+                'saint kitts and nevis': ('KN', 'NA'), 
+                'saint pierre and miquelon': ('PM', 'NA'), 
+                'sint maarten': ('SX', 'NA'), 
+                'state of palestine': ('PS', 'AS'), 
+                'trinidad and tobago': ('TT', 'SA'), 
+                'united kingdom': ('GB', 'EU'), 
+                'virgin islands of the united states': ('VI', 'NA'), 
+                }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                              FUNCTION
@@ -411,11 +475,13 @@ def __get_country_official_name_with_name(country_name, verbose=False, correct=F
         print("official_name FAIL => ", country_name)
     return official_name
 
-def _correct_official_name(country_name, verbose=0):   
 
+def _correct_official_name(country_name, verbose=0):   
     if len(_correspondance_with_official_name_lower_keys) == 0:
-        for keys, value in _correspondance_with_official_name.items():
-            _correspondance_with_official_name_lower_keys[keys.lower().strip()] = value
+        for keys, value in countries_possibilities.items():
+            for val in value:
+                _correspondance_with_official_name_lower_keys[val] = keys
+    
     if country_name is not None:
         return _correspondance_with_official_name_lower_keys.get(country_name.lower(),country_name)
     return None
@@ -477,7 +543,9 @@ if __name__ == "__main__":
     for country_feature in tqdm(test_list):
         off = __get_country_official_name_with_name(country_feature, verbose=verbose)
         if off is None:
-            print(f"\nASK : {country_feature} => GET : {off} => : {get_country_data(off, verbose=verbose)}")
+            alpha2, continent_code, latitude, longitude, alpha3, off, country_id = get_country_data(country_feature, verbose=verbose)
+            if off is None:
+                print(f"\nASK : {country_feature} => GET : {off} => : {alpha2, continent_code, latitude, longitude, alpha3, off, country_id}")
 
 
 
