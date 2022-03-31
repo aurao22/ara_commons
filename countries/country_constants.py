@@ -23,7 +23,7 @@ countries_possibilities = {
                             "Belgium":['belgica', 'belgie', 'belgien', 'belgio', 'belgique'],
                             "Benin":['bénin'],
                             "Bhutan":['bhoutan'],
-                            "Bolivia":['bolivie'],
+                            "Bolivia":['bolivie', 'bolivia'],
                             "Bosnia And Herzegovina":['bosnia i hercegovina bosnian', 'bosnia-i-hercegovina-bosnian', 'bosnie-herzégovine', 'dominican republicvbosnia and herzegovina'],
                             "Brazil":['brésil', 'brazil,pt'],
                             "Bulgaria":['bulgarien', 'bulagria', 'bulgarie'],
@@ -38,7 +38,7 @@ countries_possibilities = {
                             "Congo":['congo (rdc)', 'republic-of-the-congo', 'congo (kinshasa)', 'congo (brazzaville)'],
                             "Croatia":['croatia', 'croacia', 'croatie'],
                             "Cyprus":['κύπρο', 'chypre'],
-                            "Czech Republic":['česko', 'czech-republic', 'czech-repblik', 'czechy', 'czech-republi', 'république tchèque'],
+                            "Czech Republic":['česko', 'czech-republic', 'czech-repblik', 'czechy', 'czech-republi', 'république tchèque', 'czech republic'],
                             "Democratic People's Republic of Korea":['korea'],
                             "Democratic Republic Of The Congo":['democratic-democratic-republic-of-the-congo', 'democratic-republic-of-the-congo'],
                             "Denmark":['danemark', 'dinamarca'],
@@ -90,7 +90,7 @@ countries_possibilities = {
                             "Mauritania":['mauritanie'],
                             "Mauritius":['maurice'],
                             "Mexico":['mexique', 'mexixco', 'tijuana-baja-california'],
-                            "Moldova":['moldavie'],
+                            "Moldova":['moldavie', 'moldova'],
                             "Mongolia":['mongolia', 'mongolie'],
                             "Montenegro":['monténégro'],
                             "Morocco":['maroc', 'marruecos', 'marokko', 'moroccov', 'المغرب', 'morocco'],
@@ -101,7 +101,7 @@ countries_possibilities = {
                             "New Caledonia":['nouvelle-caledonie'],
                             "New Zealand":['new-zealand-english', 'new zealand', 'nouvelle-zélande'],
                             "North Macedonia":['republic-of-macedonia', 'north macedonia'],
-                            "Northern Cyprus":['chypre du nord'],
+                            "Northern Cyprus":['chypre du nord', 'northern cyprus'],
                             "Norway":['oslo', 'norvège'],
                             "Peru":['pérou'],
                             "Poland":['poland', 'polonia', 'pologne', 'polska', 'polen', 'poland-polski', 'poland-romania'],
@@ -115,9 +115,9 @@ countries_possibilities = {
                             "Singapore":['singapour'],
                             "Slovakia":['slowakai', 'slovaquie', 'slovénie'],
                             "Slovenia":['slowenien', 'eslovenia'],
-                            "Somalia":['somalie'],
+                            "Somalia":['somalie', 'somaliland'],
                             "South Africa":['afrique du sud'],
-                            "South Korea":['corée du sud'],
+                            "South Korea":['corée du sud', 'south korea'],
                             "South Sudan":['soudan du sud'],
                             "Spain":['espa�a', 'espagne', 'spagna', 'españa', 'spain', 'espanha', 'spanien'],
                             "State of Palestine":['palestinian territories', 'palestinian territories', 'palestinian-territories', 'فلسطين'],
@@ -125,7 +125,7 @@ countries_possibilities = {
                             "Sweden":['sverige', 'schweden', 'suecia', 'swaziland', 'suède'],
                             "Switzerland":['svizzera', 'suisse', 'szwajcaria', 'svizzera', 'schweiz', 'suiza', 'swiss'],
                             "Syria":['syrie'],
-                            "Taiwan":['taïwan'],
+                            "Taiwan":['taïwan', 'taiwan'],
                             "Tajikistan":['tadjikistan'],
                             "Tanzania":['tanzanie'],
                             "Thailand":['thailande', 'thaïlande'],
@@ -140,7 +140,7 @@ countries_possibilities = {
                             "United Republic of Tanzania":['tanzania'],
                             "United States":['estados unidos', 'etats-unis', 'etats-unis', 'vereinigte-staaten-von-amerika', 'porto rico (états-unis)', 'états-unis', 'estados-unidos', 'vereinigte staaten von amerika'],
                             "Uzbekistan":['ouzbékistan'],
-                            "Vietnam":['viêt nam'],
+                            "Vietnam":['viêt nam', 'vietnam'],
                             "Yemen":['yémen'],
                             "Yugoslavia":['yugoslavia'],
                             "Zambia":['zambie']
@@ -329,8 +329,7 @@ def get_country_alpha3(country_name, alpha2, verbose=False):
         print("cn_a3_code FAIL => ", country_name, alpha2)
     return alpha3
 
-
-def get_country_official_name(country_name, alpha2, alpha3, verbose=False):
+def get_country_official_name(country_name, alpha2=None, alpha3=None, verbose=False):
     official_name = None
     if alpha2 is not None:
         official_name = __get_country_official_name_with_alpha2(alpha2, verbose)
