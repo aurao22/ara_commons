@@ -1,5 +1,4 @@
 from collections import defaultdict
-from black import err
 import numpy as np
 from tqdm import tqdm
 from pycountry_convert import country_alpha2_to_continent_code, country_name_to_country_alpha2, country_name_to_country_alpha3, convert_country_alpha2_to_continent_code
@@ -17,7 +16,8 @@ countries_possibilities = {
         "Algeria":['algerie', 'algérie',"people's democratic algeria",'алжирская народная демократическая республика', 'la république algérienne démocratique et populaire', '阿尔及利亚', "the people's democratic republic of algeria", 'la república argelina democrática y popular', 'الجمهورية الجزائرية الديمقراطية الشعبية', 'argelia', 'algeria', "people's democratic republic of algeria", '阿尔及利亚民主人民共和国', 'algérie', 'الجزائر', 'алжир', "people's democratic algeria"],
         "Angola":['angola', 'la república de angola', '安哥拉', 'republic of angola', '安哥拉共和国', "la république d'angola", 'أنغولا', 'республика ангола', 'the republic of angola', 'جمهورية أنغولا', 'ангола'],
         "Antigua and Barbuda":['antigua-et-barbuda', 'антигуа и барбуда', 'antigua y barbuda', 'antigua and barbuda', '安提瓜和巴布达', 'أنتيغوا وبربودا'],
-        "Argentina":['argentine', 'Argentine', '阿根廷', 'the argentine republic', 'аргентина', 'الأرجنتين', 'جمهورية الأرجنتين', 'аргентинская республика', 'la república argentina', 'argentina', 'argentine republic', 'la république argentine', '阿根廷共和国', 'argentine'],
+        "Argentina":['argentine'],
+        "Argentine":['阿根廷', 'the argentine republic', 'аргентина', 'الأرجنتين', 'جمهورية الأرجنتين', 'аргентинская республика', 'la república argentina', 'argentina', 'argentine republic', 'la république argentine', '阿根廷共和国', 'argentine'],
         "Armenia":['arménie', 'armenia', '亚美尼亚', 'республика армения', 'republic of armenia', "la république d'arménie", 'la república de armenia', 'أرمينيا', 'جمهورية أرمينيا', 'армения', 'the republic of armenia', '亚美尼亚共和国'],
         "Australia":['австралия', 'أستراليا', 'australia', '澳大利亚', "l'australie", 'australie', 'null-australia'],
         "Austria":['republic of austria', 'austria', 'جمهورية النمسا', 'the republic of austria', 'la república de austria', '奥地利共和国', 'autriche', 'австрийская республика', 'النمسا', "la république d'autriche", 'австрия', '奥地利'],
@@ -33,6 +33,7 @@ countries_possibilities = {
         "Bolivia":["l'état plurinational de bolivie", '多民族玻利维亚国', 'боливия', 'the plurinational state of bolivia', 'bolivia', 'bolivie', 'многонациональное государство боливия', 'بوليفيا', 'دولة بوليفيا المتعددة القوميات', 'el estado plurinacional de bolivia'],
         "Bosnia And Herzegovina":['bosnia i hercegovina bosnian', 'bosnia-i-hercegovina-bosnian', 'bosnie-herzégovine', 'dominican republicvbosnia and herzegovina', "bosnia and herzegovina", 'la bosnie-herzégovine', 'bosnia and herzegovina', 'bosnie-herzégovine', '波斯尼亚和黑塞哥维那', 'bosnia y herzegovina', 'البوسنة والهرسك', 'republic of bosnia and herzegovina', 'босния и герцеговина'],
         "Botswana":['республика ботсвана', 'republic of botswana', 'the republic of botswana', 'la república de botswana', 'بوتسوانا', 'ботсвана', '博茨瓦纳共和国', '博茨瓦纳', 'جمهورية بوتسوانا', 'botswana', 'la république du botswana'],
+        "Brazil":['brésil', 'brazil,pt'],
         "Brunei Darussalam":['بروني دار السلام', '文莱达鲁萨兰国', 'le brunéi darussalam', 'brunei darussalam', 'brunéi darussalam', 'бруней-даруссалам'],
         "Bulgaria":['республика болгария', 'болгария', 'republic of bulgaria', 'bulgarien', 'la république de bulgarie', 'la república de bulgaria', 'bulgarie', 'the republic of bulgaria', 'bulagria', 'bulgaria', '保加利亚共和国', '保加利亚', 'بلغاريا', 'جمهورية بلغاريا'],
         "Burkina Faso":['burkina faso', 'le burkina faso', 'буркина-фасо', 'بوركينا فاسو', '布基纳法索'],
@@ -41,26 +42,28 @@ countries_possibilities = {
         "Cambodia":['مملكة كمبوديا', 'камбоджа', '柬埔寨王国', 'le royaume du cambodge', 'the kingdom of cambodia', 'camboya', 'cambodia', 'kingdom of cambodia', 'el reino de camboya', 'cambodge', 'كمبوديا', 'королевство камбоджа', '柬埔寨'],
         "Cameroon":['camerún', 'cameroun', 'republic of cameroon', 'the republic of cameroon', 'الكاميرون', 'la república del camerún', '喀麦隆共和国', '喀麦隆', 'جمهورية الكاميرون', 'la république du cameroun', 'cameroon', 'республика камерун', 'камерун'],
         "Canada":['加拿大', 'canada', 'le canada', 'canadá', 'كندا', 'канада', 'el canadá'],
-        "Central African Republic":['república centroafricana', 'the central african republic', 'central african republic', 'central african', 'جمهورية أفريقيا الوسطى', 'центральноафриканская республика', 'la république centrafricaine', 'la república centroafricana', 'république centrafricaine', '中非共和国', 'the central african republic', 'central african republic', "Central African Republic", 'centrafrique'],
+        "Central African":['república centroafricana', 'central african', 'جمهورية أفريقيا الوسطى', 'центральноафриканская республика', 'la république centrafricaine', 'la república centroafricana', 'république centrafricaine', '中非共和国', 'the central african republic', 'central african republic', "Central African Republic", 'centrafrique'],
         "Chad":['tchad', 'republic of chad', '乍得', 'جمهورية تشاد', '乍得共和国', 'республика чад', 'la república del chad', 'la république du tchad', 'تشاد', 'the republic of chad', 'chad', 'чад'],
         "Chile":['chile', '智利共和国', 'республика чили', '智利', 'la république du chili', 'republic of chile', 'جمهورية شيلي', 'شيلي', 'la república de chile', 'чили', 'the republic of chile', 'chili'],
         "China":['chine'],
         "Colombia":['la república de colombia', 'كولومبيا', 'colombie', 'the republic of colombia', '哥伦比亚共和国', '哥伦比亚', 'колумбия', 'la république de colombie', 'جمهورية كولومبيا', 'colombia', 'республика колумбия', 'republic of colombia'],
         "Commonwealth of Dominica":['多米尼克国', 'dominica', '多米尼克', 'содружество доминики', 'دومينيكا', 'dominique', 'el commonwealth de dominica', 'доминика', 'le commonwealth de dominique', 'commonwealth of dominica', 'the commonwealth of dominica', 'كمنولث دومينيكا'],
+        "Comoros":['comores'],
+        "Congo":['democratic congo', 'la république démocratique du congo', 'democratic republic of the congo', 'the democratic republic of the congo', 'la república democrática del congo', '刚果民主共和国', 'демократическая республика конго', 'جمهورية الكونغو الديمقراطية', 'république démocratique du congo', 'república democrática del congo','republic of the congo', '刚果（布）', 'республика конго', 'congo (rdc)', '刚果共和国', 'جمهورية الكونغو', 'конго', 'congo (kinshasa)', 'the republic of the congo', 'la république du congo', 'congo', 'la república del congo', 'republic-of-the-congo', 'congo (brazzaville)', 'الكونغو'],
         "Cook Islands":['las islas cook', 'the cook islands', '库克群岛', 'جزر كوك', 'les îles cook', 'îles cook', 'cook islands', 'islas cook', 'острова кука'],
-        "Democratic Republic Of The Congo":['congo (kinshasa)', 'kinshasa', '刚果共和国', 'جمهورية الكونغو', 'конго',  'congo (rdc)','جمهورية الكونغو الديمقراطية', 'république démocratique du congo', 'república democrática del congo','the democratic republic of the congo', 'la república democrática del congo', '刚果民主共和国', 'демократическая республика конго','la république démocratique du congo', 'democratic republic of the congo','democratic congo','democratic-democratic-republic-of-the-congo', 'democratic-republic-of-the-congo'],
-        "Republic of the Congo" : ['congo (brazzaville)','brazzaville',"the republic of the congo", 'republic of the congo', '刚果（布）', 'республика конго','the republic of the congo', 'la république du congo', 'congo', 'la república del congo', 'republic-of-the-congo',  'الكونغو'],
         "Costa Rica":['коста-рика', 'كوستاريكا', 'costa rica', 'республика коста-рика', 'republic of costa rica', 'la república de costa rica', '哥斯达黎加共和国', 'جمهورية كوستاريكا', '哥斯达黎加', 'the republic of costa rica', 'la république du costa rica'],
         "Croatia":['كرواتيا', 'la república de croacia', 'la république de croatie', '克罗地亚', 'хорватия', 'the republic of croatia', 'جمهورية كرواتيا', 'croatie', 'croatia', 'республика хорватия', 'republic of croatia', '克罗地亚共和国', 'croacia'],
         "Cuba":['كوبا', '古巴', 'the republic of cuba', 'cuba', 'la república de cuba', 'республика куба', 'куба', 'جمهورية كوبا', 'republic of cuba', '古巴共和国', 'la république de cuba'],
-        "Republic of Cyprus":['chypre du nord', 'north cyprus', 'northern cyprus','chypre', 'кипр', 'κύπρο', 'cyprus', 'the republic of cyprus', 'la república de chipre', 'республика кипр', '塞浦路斯共和国', 'chipre', 'la république de chypre', '塞浦路斯', 'cyprus', 'قبرص', 'جمهورية قبرص', 'republic of cyprus'],
+        "The Republic of Cyprus":['chypre du nord', 'northern cyprus','chypre', 'кипр', 'κύπρο', 'cyprus', 'the republic of cyprus', 'la república de chipre', 'республика кипр', '塞浦路斯共和国', 'chipre', 'la république de chypre', '塞浦路斯', 'cyprus', 'قبرص', 'جمهورية قبرص', 'republic of cyprus'],
         "Czech Republic":['česko', 'czech-republic', 'czech-repblik', 'czechy', 'czech-republi', 'république tchèque', 'czech republic',"czech", 'czech republic', 'the czech republic', 'la république tchèque', 'чешская республика', 'الجمهورية التشيكية', 'chequia', 'czechia', '捷克', 'tchéquie', 'la república checa', 'чехия', '捷克共和国', 'تشيكيا', 'czech'],
-        "Sao Tome and Principe":['sao tomé-et-principe','tomé-et-principe', 'république démocratique de sao tomé-et-principe', 'são tomé e príncipe', 'la république démocratique de sao tomé-et-principe', 'sao tome and principe','democratic sao tome and principe', 'сан-томе и принсипи', 'sao tome and principe', 'democratic republic of sao tome and principe', 'sao tomé-et-principe', '圣多美和普林西比', 'democratic sao tome and principe', 'سان تومي وبرينسيبي', 'the democratic republic of sao tome and principe', 'جمهورية سان تومي وبرينسيبي الديمقراطية', 'la república democrática de santo tomé y príncipe', 'демократическая республика сан-томе и принсипи', '圣多美和普林西比民主共和国', 'santo tomé y príncipe', 'la république démocratique de sao tomé-et-principe'],
+        "Côte d'Ivoire":["the republic of côte d'ivoire", 'республика кот-д’ивуар', 'كوت ديفوار', '科特迪瓦', '科特迪瓦共和国', "republic of côte d'ivoire", "côte d'ivoire", 'جمهورية كوت ديفوار', 'la república de côte d’ivoire', 'côte d’ivoire', "la république de côte d'ivoire", 'кот-д’ивуар'],
+        "Democratic Republic Of The Congo":['democratic-democratic-republic-of-the-congo', 'democratic-republic-of-the-congo'],
+        "Democratic Sao Tome and Principe":['сан-томе и принсипи', 'sao tome and principe', 'democratic republic of sao tome and principe', 'sao tomé-et-principe', '圣多美和普林西比', 'democratic sao tome and principe', 'سان تومي وبرينسيبي', 'the democratic republic of sao tome and principe', 'جمهورية سان تومي وبرينسيبي الديمقراطية', 'la república democrática de santo tomé y príncipe', 'демократическая республика сан-томе и принсипи', '圣多美和普林西比民主共和国', 'santo tomé y príncipe', 'la république démocratique de sao tomé-et-principe'],
         "Sri Lanka":["democratic socialist sri lanka",'斯里兰卡民主社会主义共和国', 'سري لانكا', 'sri lanka', 'the democratic socialist republic of sri lanka', 'democratic socialist republic of sri lanka', '斯里兰卡', 'جمهورية سري لانكا الاشتراكية الديمقراطية', 'демократическая социалистическая республика шри-ланка', 'la république socialiste démocratique de sri lanka', 'шри-ланка', 'democratic socialist sri lanka', 'la república socialista democrática de sri lanka'],
-        "Timor-Leste":['democratic timor-Leste', 'timor-Leste', 'the democratic republic of timor-Leste', 'democratic republic of timor-leste', '东帝汶', 'the democratic republic of timor-leste', '东帝汶民主共和国', 'تيمور- ليشتي', 'timor-leste', 'جمهورية تيمور - ليشتي الديمقراطية', 'la república democrática de timor-leste', 'тимор-лешти', 'la république démocratique du timor-leste', 'демократическая республика тимор-лешти', 'democratic timor-leste'],
+        "Democratic Timor-Leste":['democratic republic of timor-leste', '东帝汶', 'the democratic republic of timor-leste', '东帝汶民主共和国', 'تيمور- ليشتي', 'timor-leste', 'جمهورية تيمور - ليشتي الديمقراطية', 'la república democrática de timor-leste', 'тимор-лешти', 'la république démocratique du timor-leste', 'демократическая республика тимор-лешти', 'democratic timor-leste'],
         "Denmark":['kingdom of denmark', 'الدانمرك', 'the kingdom of denmark', 'el reino de dinamarca', '丹麦王国', 'королевство дания', 'дания', 'le royaume du danemark', 'dinamarca', 'denmark', 'مملكة الدانمرك', '丹麦', 'danemark'],
-        "Republic of Djibouti":['Djibouti','республика джибути', '吉布提', 'the republic of djibouti', 'djibouti', 'جمهورية جيبوتي', '吉布提共和国', 'djibouti', 'la república de djibouti', 'republic of djibouti', 'джибути', 'la république de djibouti', 'جيبوتي'],
-        "Dominican Republic":['dominicaine (la république)', 'la république dominicaine','république dominicaine','dominican','доминиканская республика', '多米尼加', 'la república dominicana', 'république dominicaine', 'the dominican republic', 'la république dominicaine', 'الجمهورية الدومينيكية', 'república dominicana', 'dominican republic', '多米尼加共和国', 'dominican', "dominican republic",'republica-dominicana-espanol', 'république dominicaine'],
+        "Djibouti":['республика джибути', '吉布提', 'the republic of djibouti', 'جمهورية جيبوتي', '吉布提共和国', 'djibouti', 'la república de djibouti', 'republic of djibouti', 'джибути', 'la république de djibouti', 'جيبوتي'],
+        "Dominican":['доминиканская республика', '多米尼加', 'la república dominicana', 'république dominicaine', 'the dominican republic', 'la république dominicaine', 'الجمهورية الدومينيكية', 'república dominicana', 'dominican republic', '多米尼加共和国', 'dominican', "dominican republic",'republica-dominicana-espanol', 'république dominicaine'],
         "Eastern Uruguay":['uruguay', 'أوروغواي', 'جمهورية أوروغواي الشرقية', "la république orientale de l'uruguay", 'the eastern republic of uruguay', 'уругвай', 'восточная республика уругвай', '乌拉圭', 'eastern uruguay', '乌拉圭东岸共和国', 'eastern republic of uruguay', 'la república oriental del uruguay'],
         "Ecuador":["la république de l'équateur", 'republic of ecuador', 'جمهورية إكوادور', 'la república del ecuador', 'эквадор', 'ecuador', '厄瓜多尔共和国', 'республика эквадор', 'équateur', 'إكوادور', '厄瓜多尔', 'the republic of ecuador'],
         "Egypt":['egipto', "la république arabe d'égypte", 'جمهورية مصر العربية', 'египет', 'the arab republic of egypt', 'la república árabe de egipto', 'égypte', 'арабская республика египет', '埃及', 'egypt', 'arab republic of egypt', 'مصر', '阿拉伯埃及共和国'],
@@ -70,7 +73,7 @@ countries_possibilities = {
         "Eswatini":['إسواتيني', 'kingdom of eswatini', 'the kingdom of eswatini', 'эсватини', 'مملكة إسواتيني', '斯威士兰', 'el reino de eswatini', 'le royaume d’eswatini', '斯威士兰王国', 'eswatini', 'королевство эсватини', 'Eswatini, Kingdom of'],
         "Ethiopia":['эфиопия', "la république fédérale démocratique d'éthiopie", 'جمهورية إثيوبيا الديمقراطية الاتحادية', 'федеративная демократическая республика эфиопия', 'etiopía', 'federal democratic republic of ethiopia', 'ethiopia', '埃塞俄比亚联邦民主共和国', 'إثيوبيا', '埃塞俄 比亚', 'the federal democratic republic of ethiopia', 'éthiopie', 'la república democrática federal de etiopía'],
         "European Union":['europa', 'europe'],
-        "Brazil":['federative brazil',"Brazil","brazil",'brésil', 'brazil,pt', 'the federative republic of brazil', 'federative republic of brazil', 'republic of brazil', 'brazil','федеративная республика бразилия', 'the federative republic of brazil', 'جمهورية البرازيل الاتحادية', 'la république fédérative du brésil', 'البرازيل', '巴西联邦共和国', 'brazil', 'federative brazil', 'brésil', 'la república federativa del brasil', '巴西', 'бразилия', 'brasil', 'federative republic of brazil'],
+        "Federative Brazil":['федеративная республика бразилия', 'the federative republic of brazil', 'جمهورية البرازيل الاتحادية', 'la république fédérative du brésil', 'البرازيل', '巴西联邦共和国', 'brazil', 'federative brazil', 'brésil', 'la república federativa del brasil', '巴西', 'бразилия', 'brasil', 'federative republic of brazil'],
         "Fiji":['斐济共和国', 'la république des fidji', 'la república de fiji', 'فيجي', 'republic of fiji', 'республика  фиджи', 'جمهورية فيجي', 'the republic of fiji', '斐济', 'фиджи', 'fiji', 'fidji'],
         "Finland":['финляндия', '芬兰', 'finlande', 'republic of finland', 'la república de finlandia', 'finlandia', '芬兰共和国', 'la république de finlande', 'финляндская республика', 'suomi', 'فنلندا', 'finland', 'جمهورية فنلندا', 'the republic of finland'],
         "France":['france', 'dom-tom', 'franca', 'francia', 'francja', 'frankreich', 'frankrijk', 'franța', 'paris', 'ranska',"french",'франция', '法国', 'france', 'francia', '法兰西共和国', 'французская республика', 'الجمهورية الفرنسية', 'فرنسا', 'french', 'the french republic', 'la república francesa', 'french republic', 'la république française'],
@@ -81,7 +84,7 @@ countries_possibilities = {
         "Germany":['germania', 'allemagne', 'la república federal de alemania', 'جمهورية ألمانيا الاتحادية', 'federal republic of germany', 'germany', 'the federal republic of germany', 'niemcy', 'deutschland', "la république fédérale d'allemagne", '德国', 'федеративная республика германия', '德意志联邦共和国', 'германия', 'east-germany', 'ألمانيا', 'alemania'],
         "Ghana":['غانا', 'гана', 'the republic of ghana', 'la république du ghana', 'la república de ghana', '加纳', '加纳共和国', 'جمهورية غانا', 'ghana', 'республика гана', 'republic of ghana'],
         "Grand Duchy of Luxembourg":['великое герцогство люксембург', 'لكسمبرغ', '卢森堡大公国', 'دوقية لكسمبرغ الكبرى', 'luxemburgo', 'el gran ducado de luxemburgo', 'the grand duchy of luxembourg', '卢森堡', 'le grand-duché de luxembourg', 'люксембург', 'luxembourg', 'grand duchy of luxembourg'],
-        "Greece":['grèce', 'Hellenic', "Grèce",'greece', 'la république hellénique', 'الجمهورية الهيلينية', 'grecia', 'hellenic', 'la república helénica', 'hellenic republic', 'the hellenic republic', 'греческая республика', 'اليونان', '希腊共和国', 'греция', 'grèce', '希腊'],
+        "Greece":['grèce'],
         "Grenada":['格林纳达', 'غرينادا', 'granada', 'grenada', 'grenade', 'la grenade', 'гренада'],
         "Guadeloupe":['guadalupe'],
         "Guatemala":['غواتيمالا', 'la república de guatemala', '危地马拉共和国', '危地马拉', 'guatemaltecos', 'جمهورية غواتيمالا', 'гватемала', 'la république du guatemala', 'the republic of guatemala', 'guatemala', 'республика гватемала', 'republic of guatemala'],
@@ -89,35 +92,40 @@ countries_possibilities = {
         "Guinea-Bissau":['几内亚比绍共和国', 'جمهورية غينيا - بيساو', 'guinea-bissau', 'guinée-bissau', 'republic of guinea-bissau', 'гвинея-бисау', 'республика гвинея-бисау', '几内亚比绍', 'la república de guinea-bissau', 'the republic of guinea-bissau', 'غينيا - بيساو', 'la république de guinée-bissau'],
         "Guyana":['гайана', 'the co-operative republic of guyana', 'кооперативная республика гайана', 'guyana', 'غيانا', '圭亚那合作共和国', 'la república cooperativa de guyana', 'la république coopérative du guyana', '圭亚那', 'جمهورية غيانا التعاونية', 'republic of guyana'],
         "Haiti":['海地', '海地共和国', 'haití', 'haïti', 'haiti', 'la república de haití', 'جمهورية هايتي', 'هايتي', 'гаити', "la république d'haïti", 'республика гаити', 'the republic of haiti', 'republic of haiti'],
-        "Jordan":['jordania','hashemite jordan', 'jordan', 'иорданское хашимитское королевство', 'иордания', 'jordanie', 'hashemite kingdom of jordan', 'the hashemite kingdom of jordan', '约旦哈希姆王国', 'el reino hachemita de jordania', 'المملكة الأردنية الهاشمية', 'hashemite jordan', 'le royaume hachémite de jordanie', 'الأردن', '约旦', 'jordan'],
+        "Hashemite Jordan":['jordania', 'иорданское хашимитское королевство', 'иордания', 'jordanie', 'hashemite kingdom of jordan', 'the hashemite kingdom of jordan', '约旦哈希姆王国', 'el reino hachemita de jordania', 'المملكة الأردنية الهاشمية', 'hashemite jordan', 'le royaume hachémite de jordanie', 'الأردن', '约旦', 'jordan'],
+        "Hellenic":['greece', 'la république hellénique', 'الجمهورية الهيلينية', 'grecia', 'hellenic', 'la república helénica', 'hellenic republic', 'the hellenic republic', 'греческая республика', 'اليونان', '希腊共和国', 'греция', 'grèce', '希腊'],
         "Holy See":['vatican-city', '罗马教廷', 'le saint-siège', 'святой престол', 'santa sede', 'la santa sede', 'holy see', 'الكرسي الرسولي', 'the holy see', 'saint-siège'],
         "Honduras":['جمهورية هندوراس', '洪都拉斯', '洪都拉斯共和国', 'гондурас', 'هندوراس', 'the republic of honduras', 'la république du honduras', 'республика гондурас', 'honduras', 'republic of honduras', 'la república de honduras'],
-        "Hong Kong":['hong kong s.a.r. of china','hong kong','hong kong (chine)', "Hong Kong Special Administrative Region of the People's Republic of China", '中華人民共和國香港特別行政區'],
+        "Hong Kong S.A.R. of China":['hong kong s.a.r. of china','hong kong','hong kong (chine)', "Hong Kong Special Administrative Region of the People's Republic of China", '中華人民共和國香港特別行政區'],
         "Hungary":['la hongrie', 'hungaria', 'hungria', 'hungría', '匈牙利', 'hongrie', 'hungary', 'هنغاريا', 'венгрия'],
         "Iceland":['islandia', 'iceland', "la république d'islande", 'islande', 'جمهورية آيسلندا', '冰岛', 'آيسلندا', 'the republic of iceland', 'la república de islandia', 'исландия', '冰岛共和国', 'республика исландия', 'republic of iceland'],
         "Independent State of Papua New Guinea":['независимое государство папуа — новая гвинея', "l'état indépendant de papouasie-nouvelle-guinée", 'el estado independiente de papua nueva guinea', '巴布亚新几内亚', 'دولة بابوا غينيا الجديدة المستقلة', 'папуа — новая гвинея', 'independent state of papua new guinea', '巴布亚新几内亚独立国', 'papua new guinea', 'papua nueva guinea', 'papouasie-nouvelle-guinée', 'the independent state of papua new guinea', 'بابوا غينيا الجديدة'],
         "Independent State of Samoa":['el estado independiente de samoa', '萨摩亚', 'samoa', '萨摩亚独立国', 'دولة ساموا المستقلة', 'самоа', 'independent state of samoa', 'ساموا', 'независимое государство самоа', 'the independent state of samoa', "l'état indépendant du samoa"],        
         "India":['india', '印度', 'جمهورية الهند', 'inda', 'индия', 'la república de la india', '印度共和国', 'الهند', 'the republic of india', 'indian-subcontinent', "la république de l'inde", 'republic of india', 'inde', 'республика индия'],
         "Indonesia":['индонезия', 'جمهورية إندونيسيا', 'indonésie', 'indonesia', 'republic of indonesia', 'the republic of indonesia', 'إندونيسيا', 'республика индонезия', '印度尼西亚', 'la república de indonesia', "la république d'indonésie", '印度尼西亚共和国'],
-        "Iran":['Iran', 'iran',"la république islamique d'iran", 'irán', 'иран', 'la república islámica del irán', 'исламская республика иран', 'iran', 'جمهورية إيران الإسلامية', 'the islamic republic of iran', '伊朗伊斯兰共和国', 'إيران'],
-        "Iraq":['iraqi-kurdistan','kurdistan irakien','la república del iraq', 'республика ирак', 'the republic of iraq', '伊拉克', "la république d'iraq", 'iraq', 'جمهورية العراق', 'republic of iraq', '伊拉克共和国', 'العراق', 'ирак'],
+        "Iran":["la république islamique d'iran", 'irán', 'иран', 'la república islámica del irán', 'исламская республика иран', 'iran', 'جمهورية إيران الإسلامية', 'the islamic republic of iran', '伊朗伊斯兰共和国', 'إيران'],
+        "Iraq":['la república del iraq', 'республика ирак', 'the republic of iraq', '伊拉克', "la république d'iraq", 'iraq', 'جمهورية العراق', 'republic of iraq', '伊拉克共和国', 'العراق', 'ирак'],
         "Ireland":['irland', 'ирландия', 'ireland', 'أيرلندا', '爱尔兰', 'irland-en-de', 'irlande', 'irlanda', "l'irlande"],
         "Israel":['ישראל', 'israël'],
         "Italy":['italia', 'italien', 'italy', 'andria', 'italie','italian', 'italie', 'italia', 'la république italienne', 'the republic of italy', 'la república italiana', '意大利共和国', 'جمهورية إيطاليا', 'итальянская республика', 'إيطاليا', '意大利', 'италия', 'italy', 'italian republic'],
-        "Republic of Côte d'Ivoire":["ivory coast", "republic of côte d'ivoire","ivory coast", 'cote-d-ivoire',"côte d'ivoire","the republic of côte d'ivoire", 'республика кот-д’ивуар', 'كوت ديفوار', '科特迪瓦', '科特迪瓦共和国', "republic of côte d'ivoire", "côte d'ivoire", 'جمهورية كوت ديفوار', 'la república de côte d’ivoire', 'côte d’ivoire', "la république de côte d'ivoire", 'кот-д’ивуар'],
+        "Ivory Coast":['cote-d-ivoire'],
         "Jamaica":['جامايكا', 'jamaica', 'jamaïque', 'ямайка', 'la jamaïque', '牙买加'],
         "Japan":['日本国', 'اليابان', 'japón', 'le japon', 'japon', 'japan', 'япония', '日本', 'el japón'],
         "Jordan":['الأردن', 'لأردن', 'jordanie'],
         "Kazakhstan":['the republic of kazakhstan', '哈萨克斯坦共和国', 'كازاخستان', 'جمهورية كازاخستان', 'la república de kazajstán', 'республика казахстан', 'казахстан', 'kazakhstan', 'la république du kazakhstan', 'kazajstán', 'republic of kazakhstan', '哈萨克斯坦'],
         "Kenya":['كينيا', 'republic of kenya', '肯尼亚', 'кения', 'the republic of kenya', '肯尼亚共和国', 'республика кения', 'kenya', 'la república de kenya', 'جمهورية كينيا', 'la république du kenya'],
         "Kiribati":['кирибати', 'كيريباس', 'the republic of kiribati', 'la república de kiribati', 'la république de kiribati', 'республика кирибати', 'جمهورية كيريباس', 'kiribati', 'republic of kiribati', '基里巴斯共和国', '基里巴斯'],
-        "Kosovo":['kosovo', 'Kosovo'],
+        "Korea":['korea', 'la république populaire démocratique de corée', '大韩民国', 'korea-한국어', 'جمهورية كوريا الشعبية الديمقراطية', 'the republic of korea', 'república popular democrática de corea', 'جمهورية كوريا', 'la république de corée', '朝鲜民主主义人民共和国', "the democratic people's republic of korea", 'république populaire démocratique de corée', 'la república de corea', 'república de corea', 'republic of korea', 'республика корея', 'république de corée', 'корейская народно-демократическая республика', "democratic people's republic of korea", 'la república popular democrática de corea'],
+        "Kosovo":['kosovo', 'kosovo'],
+        "Kurdistan irakien":['iraqi-kurdistan'],
         "Kuwait":['koweït'],
-        "Kyrgyzstan":['kyrgyz', 'kirghizistan','kyrgyz republic', '吉尔吉斯共和国', 'kirguistán', '吉尔吉斯斯坦', 'the kyrgyz republic', 'кыргызская республика', 'kyrgyzstan', 'кыргызстан', 'جمهورية قيرغيزستان', 'قيرغيزستان', 'kirghizistan', 'la república kirguisa', 'la république kirghize', 'kyrgyz'],
-        "Laos":['Laos','laos',"lao people's democratic",'la république démocratique populaire lao', 'جمهورية لاو الديمقراطية الشعبية', 'république démocratique populaire lao', "lao people's democratic", 'la república democrática popular lao', '老挝人民民主共和国', "lao people's democratic republic", "the lao people's democratic republic", 'лаосская народно-демократическая республика', 'república democrática popular lao'],
+        "Kyrgyz":['kyrgyz republic', '吉尔吉斯共和国', 'kirguistán', '吉尔吉斯斯坦', 'the kyrgyz republic', 'кыргызская республика', 'kyrgyzstan', 'кыргызстан', 'جمهورية قيرغيزستان', 'قيرغيزستان', 'kirghizistan', 'la república kirguisa', 'la république kirghize', 'kyrgyz'],
+        "Kyrgyzstan":['kirghizistan'],
+        "Lao":["l>ao people's democratic",'la république démocratique populaire lao', 'جمهورية لاو الديمقراطية الشعبية', 'république démocratique populaire lao', "lao people's democratic", 'la república democrática popular lao', '老挝人民民主共和国', "lao people's democratic republic", "the lao people's democratic republic", 'лаосская народно-демократическая республика', 'república democrática popular lao'],
+        "Latin America":['latinoamerica'],
         "Latvia":['republic of latvia', 'جمهورية لاتفيا', 'letonia', 'the republic of latvia', 'la república de letonia', '拉脱维亚共和国', 'لاتفيا', 'latvia', '拉脱维亚', 'lettonie', 'la république de lettonie', 'латвия', 'латвийская республика'],
         "Lebanese":['lebanese republic', 'ливан', 'الجمهورية اللبنانية', '黎巴嫩', 'لبنان', 'la république libanaise', 'líbano', 'ливанская республика', '黎巴嫩共和国', 'lebanese', 'the lebanese republic', 'la república libanesa', 'lebanon', 'liban'],
-        "Lebanon":['liban', "lebanese", 'lebanese republic', 'ливан', 'الجمهورية اللبنانية', '黎巴嫩', 'لبنان', 'la république libanaise', 'líbano', 'ливанская республика', '黎巴嫩共和国', 'lebanese', 'the lebanese republic', 'la república libanesa', 'lebanon', 'liban'],
+        "Lebanon":['liban'],
         "Lesotho":['ليسوتو', 'kingdom of lesotho', '莱索托王国', 'مملكة ليسوتو', 'the kingdom of lesotho', 'lesotho', '莱索托', 'лесото', 'королевство лесото', 'le royaume du lesotho', 'el reino de lesotho'],
         "Liberia":['利比里亚共和国', 'the republic of liberia', 'libéria', '利比里亚', 'جمهورية ليبريا', 'republic of liberia', 'la république du libéria', 'республика либерия', 'либерия', 'la república de liberia', 'ليبريا', 'liberia'],
         "Libya":['利比亚', "l'état de libye", 'libye', 'государство ливия', 'دولة ليبيا', '利比亚国', 'libya', 'ливия', 'el estado de libia', 'libia', 'ليبيا', 'the state of libya'],
@@ -163,14 +171,13 @@ countries_possibilities = {
         "Philippines":['菲律宾共和国', 'la república de filipinas', 'филиппины', 'republic of the philippines', 'filipinas', 'جمهورية الفلبين', '菲律宾', 'الفلبين', 'the republic of the philippines', 'республика филиппины', 'philippines', 'la république des philippines'],
         "Poland":['poland-polski', 'poland-romania', 'republic of poland', 'la république de pologne', 'республика польша', 'pologne', 'جمهورية بولندا', 'the republic of poland', '波兰共和国', 'polen', 'polonia', 'польша', 'la república de polonia', '波兰', 'polska', 'بولندا', 'poland'],
         "Portugal":['portugal', 'portuguese', 'portuguese republic', '葡萄牙共和国', 'португалия', 'la república portuguesa', 'جمهورية البرتغال', '葡萄牙', 'la république portugaise', 'the portuguese republic', 'البرتغال', 'portuguese', 'portugal', 'португальская республика'],
-        "Taiwan":["taïwan", "taiwan, province of china", "taiwan"],
         "Principality of Andorra":['andorre', 'княжество андорра', '安道尔', 'andorra', 'principality of andorra', 'إمارة أندورا', 'андорра', 'أندورا', 'el principado de andorra', '安道尔公国', 'the principality of andorra', "la principauté d'andorre"],
         "Principality of Liechtenstein":['лихтенштейн', 'княжество лихтенштейн', '列支敦士登公国', 'liechtenstein', 'ليختنشتاين', 'el principado de liechtenstein', '列支敦士登', 'the principality of liechtenstein', 'la principauté du liechtenstein', 'principality of liechtenstein', 'إمارة ليختنشتاين'],
         "Principality of Monaco":['the principality of monaco', 'княжество монако', 'el principado de mónaco', 'principality of monaco', 'إمارة موناكو', 'monaco', 'موناكو', 'la principauté de monaco', '摩纳哥公国', '摩纳哥', 'mónaco', 'монако'],
         "Reunion":['la reunion', 'la-reunion'],
         "Romania":['румыния', '罗马尼亚', 'la roumanie', 'romanina', 'رومانيا', 'romaniaă', 'romania', 'roumanie', 'rumania'],
-        "Russian Federation":["russian federation",'russia','russia-русский', 'fédération de russie', 'federación de rusia', 'الاتحاد الروسي', 'la federación de rusia', 'rusia', 'soviet-union', 'russie', '俄罗斯联邦', 'russian federation', 'the russian federation', 'la fédération de russie', 'российская федерация'],
-        "Rwanda":['Rwandese','республика руанда', 'руанда', 'the republic of rwanda', 'la república de rwanda', '卢旺达', 'رواندا', 'la république du rwanda', 'rwanda', '卢旺达共和国', 'rwandese republic', 'rwandese', 'جمهورية رواندا'],
+        "Russian Federation":['russia-русский', 'fédération de russie', 'federación de rusia', 'الاتحاد الروسي', 'la federación de rusia', 'rusia', 'soviet-union', 'russie', '俄罗斯联邦', 'russian federation', 'the russian federation', 'la fédération de russie', 'российская федерация'],
+        "Rwandese":['республика руанда', 'руанда', 'the republic of rwanda', 'la república de rwanda', '卢旺达', 'رواندا', 'la république du rwanda', 'rwanda', '卢旺达共和国', 'rwandese republic', 'rwandese', 'جمهورية رواندا'],
         "Saint Kitts and Nevis":['سانت كيتس ونيفس', 'saint kitts y nevis', 'saint-kitts-et-nevis', 'сент-китс и невис', 'saint kitts and nevis', ' 圣基茨和尼维斯'],
         "Saint Lucia":['سانت لوسيا', 'saint lucia', '圣卢西亚', 'sainte-lucie', 'сент-люсия', 'santa lucía'],
         "Saint Vincent and the Grenadines":['圣文森特和格林纳丁斯', 'сент-винсент и гренадины', 'san vicente y las granadinas', 'saint vincent and the grenadines', 'سانت فنسنت وجزر غرينادين', 'saint-vincent-et-les grenadines'],
@@ -181,18 +188,20 @@ countries_possibilities = {
         "Seychelles":['republic of seychelles', 'республика сейшельские острова', 'the republic of seychelles', 'la république des seychelles', '塞舌尔', 'la república de seychelles', 'جمهورية سيشيل', '塞舌尔共和国', 'сейшельские острова', 'seychelles', 'سيشيل'],
         "Sierra Leone":['сьерра-леоне', 'جمهورية سيراليون', 'la república de sierra leona', 'sierra leona', 'سيراليون', 'sierra leone', 'the republic of sierra leone', 'la république de sierra leone', '塞拉利昂共和国', 'республика сьерра-леоне', 'republic of sierra leone', '塞拉利昂'],
         "Singapore":['سنغافورة', 'сингапур', 'the republic of singapore', 'республика сингапур', 'جمهورية سنغافورة', 'singapour', '新加坡共和国', 'la república de singapur', 'singapur', '新加坡', 'republic of singapore', 'singapore', 'la république de singapour'],
-        "Slovakia":['slowakai', 'slovaquie', 'slovénie','slovak', 'eslovaquia', 'slovaquie', '斯洛伐克共和国', 'الجمهورية السلوفاكية', 'словацкая республика', 'slovak republic', 'the slovak republic', 'словакия', 'slovakia', '斯洛伐克', 'سلوفاكيا', 'la république slovaque', 'la república eslovaca'],
+        "Slovak":['slovak', 'eslovaquia', 'slovaquie', '斯洛伐克共和国', 'الجمهورية السلوفاكية', 'словацкая республика', 'slovak republic', 'the slovak republic', 'словакия', 'slovakia', '斯洛伐克', 'سلوفاكيا', 'la république slovaque', 'la república eslovaca'],
+        "Slovakia":['slowakai', 'slovaquie', 'slovénie'],
         "Slovenia":['la república de eslovenia', 'سلوفينيا', 'словения', 'the republic of slovenia', '斯洛文尼亚共和国', 'جمهورية سلوفينيا', 'slowenien', 'slovénie', '斯洛文尼亚', 'la république de slovénie', 'eslovenia', 'slovenia', 'республика словения', 'republic of slovenia'],     
+        "Socialist Viet Nam":['越南', 'the socialist republic of viet nam', '越南社会主义共和国', 'socialist viet nam', 'viet nam', 'فييت نام', 'socialist republic of viet nam', 'вьетнам', 'социалистическая республика вьетнам', 'جمهورية فييت نام الاشتراكية', 'la république socialiste du viet nam', 'la república socialista de viet nam'],
         "Solomon Islands":['las islas salomón', '所罗门群岛', 'les îles salomon', 'solomon islands', 'соломоновы острова', 'îles salomon', 'islas salomón', 'جزر سليمان'],
         "Somalia":['federal republic of somalia', 'الصومال', 'федеративная республика сомали', 'somalie', 'сомали', 'the federal republic of somalia', 'جمهورية الصومال الاتحادية', 'somalia', 'la república federal de somalia', '索马里联邦共和国', '索马里', 'la république fédérale de somalie', 'somaliland'],
         "South Africa":['the republic of south africa', 'la république sud-africaine', 'южно-африканская республика', 'جنوب أفريقيا', 'la república de sudáfrica', '南非共和国', 'جمهورية جنوب أفريقيا', 'sudáfrica', '南非', 'republic of south africa', 'south africa', 'южная африка', 'afrique du sud'],
-        "South Korea":['corée du sud', 'south korea' , "korea", 'la république populaire démocratique de corée', '大韩民国', 'korea-한국어', 'جمهورية كوريا الشعبية الديمقراطية', 'the republic of korea', 'república popular democrática de corea', 'جمهورية كوريا', 'la république de corée', '朝鲜民主主义人民共和国', "the democratic people's republic of korea", 'république populaire démocratique de corée', 'la república de corea', 'república de corea', 'republic of korea', 'республика корея', 'république de corée', 'корейская народно-демократическая республика', "democratic people's republic of korea", 'la república popular democrática de corea'],
+        "South Korea":['corée du sud', 'south korea'],
+        "South Sudan":['republic of south sudan', 'جنوب السودان', 'soudan du sud', 'south sudan', 'the republic of south sudan', 'la república de sudán del sur', '南苏丹', 'южный судан', '南苏丹共和国', 'جمهورية جنوب السودان', 'республика южный судан', 'sudán del sur', 'la république du soudan du sud'],
         "Spain":['espa�a', 'espanha', 'kingdom of spain', 'españa', "le royaume d'espagne", '西班牙', 'spagna', 'the kingdom of spain', '西班牙王国', 'مملكة إسبانيا', 'королевство испания', 'испания', 'el reino de españa', 'espagne', 'إسبانيا', 'spanien', 'spain'],
         "State of Israel":['以色列', "l'état d'israël", '以色列国', 'دولة إسرائيل', 'إسرائيل', 'государство израиль', 'el estado de israel', 'israel', 'state of israel', 'the state of israel', 'израиль', 'israël'],
         "State of Kuwait":['الكويت', '科威特', 'kuwait', 'koweït', 'the state of kuwait', "l'état du koweït", 'государство кувейт', 'state of kuwait', '科威特国', 'دولة الكويت', 'el estado de kuwait', 'кувейт'],
-        "State of Palestine":['Palestine','palestine','palestinian-territories', 'state of palestine', 'فلسطين', 'estado de palestina', 'دولة فلسطين', 'état de palestine', 'the state of palestine', "l'état de palestine", 'государство палестина', 'el estado de palestina', '巴勒斯坦国', 'palestinian territories'],
+        "State of Palestine":['palestinian-territories', 'state of palestine', 'فلسطين', 'estado de palestina', 'دولة فلسطين', 'état de palestine', 'the state of palestine', "l'état de palestine", 'государство палестина', 'el estado de palestina', '巴勒斯坦国', 'palestinian territories'],
         "State of Qatar":['государство катар', 'قطر', '卡塔尔国', '卡塔尔', "l'état du qatar", 'state of qatar', 'катар', 'the state of qatar', 'el estado de qatar', 'qatar', 'دولة قطر'],
-        "South Sudan":['republic of south sudan', 'جنوب السودان',"South Sudan", 'Soudan du Sud','soudan du sud', 'south sudan', 'the republic of south sudan', 'la república de sudán del sur', '南苏丹', 'южный судан', '南苏丹共和国', 'جمهورية جنوب السودان', 'республика южный судан', 'sudán del sur', 'république du soudan du sud', 'la république du soudan du sud'],
         "Sudan":['جمهورية السودان', '苏丹共和国', 'soudan', 'судан', 'the republic of the sudan', 'sudán', 'السودان', 'республика судан', '苏丹', 'la república del sudán', 'sudan', 'republic of the sudan', 'la république du soudan'],
         "Sultanate of Oman":['oman', 'omán', 'sultanate of oman', 'the sultanate of oman', 'عمان', '阿曼', 'султанат оман', 'la sultanía de omán', 'оман', "le sultanat d'oman", '阿曼苏丹国', 'سلطنة عمان'],
         "Suriname":['la república de suriname', '苏里南共和国', 'республика суринам', 'سورينام', 'the republic of suriname', 'suriname', 'جمهورية سورينام', 'la république du suriname', 'republic of suriname', 'суринам', '苏里南'],
@@ -200,38 +209,177 @@ countries_possibilities = {
         "Swiss Confederation":['la confederación suiza', 'швейцарская конфедерация', 'swiss confederation', 'швейцария', 'الاتحاد السويسري', '瑞士 联邦', 'suiza', 'la confédération suisse', 'سويسرا', '瑞士', 'the swiss confederation', 'suisse', 'switzerland'],
         "Switzerland":['svizzera', 'suisse', 'szwajcaria', 'svizzera', 'schweiz', 'suiza', 'swiss'],
         "Syria":['syrie'],
-        "Syrian Arab Republic":['syrian arab republic','الجمهورية العربية السورية', 'the syrian arab republic', 'la república árabe siria', 'república árabe siria', 'сирийская арабская республика', 'syrian arab', 'république arabe syrienne', '阿拉伯叙利亚共和国', 'syrian arab republic', 'la république arabe syrienne'],
+        "Syrian Arab":['الجمهورية العربية السورية', 'the syrian arab republic', 'la república árabe siria', 'república árabe siria', 'сирийская арабская республика', 'syrian arab', 'république arabe syrienne', '阿拉伯叙利亚共和国', 'syrian arab republic', 'la république arabe syrienne'],
         "Tajikistan":['la república de tayikistán', '塔吉克斯坦', 'جمهورية طاجيكستان', 'tadjikistan', 'la république du tadjikistan', 'tajikistan', 'the republic of tajikistan', 'республика таджикистан', '塔吉克斯坦共和国', 'таджикистан', 'طاجيكستان', 'republic of tajikistan', 'tayikistán'],
         "Tanzania":['tanzanie',"united tanzania","tanzania", "United Republic of Tanzania", '坦桑尼亚联合共和国', 'la république-unie de tanzanie', 'la república unida de tanzanía', 'república unida de tanzanía', 'united republic of tanzania', 'united tanzania', 'جمهورية تنزانيا المتحدة', 'the united republic of tanzania', 'объединенная республика танзания', 'république-unie de tanzanie'],
         "Thailand":['تايلند', 'таиланд', '泰王国', 'thailande', 'the kingdom of thailand', 'thaïlande', 'kingdom of thailand', 'le royaume de thaïlande', 'thailand', 'королевство таиланд', 'مملكة تايلند', '泰国', 'tailandia', 'el reino de tailandia'],
-        "Togo":['togolese','togo','la république togolaise', 'тоголезская республика', 'того', '多哥共和国', 'togolese republic', 'جمهورية توغو', 'togo', 'the togolese republic', 'la república togolesa', 'togolese', 'توغو', '多哥'],
+        "Togolese":['la république togolaise', 'тоголезская республика', 'того', '多哥共和国', 'togolese republic', 'جمهورية توغو', 'togo', 'the togolese republic', 'la república togolesa', 'togolese', 'توغو', '多哥'],
         "Tonga":['汤加', 'el reino de tonga', '汤加王国', 'tonga', 'kingdom of tonga', 'тонга', 'the kingdom of tonga', 'le royaume des tonga', 'مملكة تونغا', 'تونغا', 'королевство тонга'],
         "Trinidad and Tobago":['trinidad-tobagot-english', 'trinité-et-tobago', 'trinidad & tobago',"trinidad and tobago",'republic of trinidad and tobago', 'جمهورية ترينيداد وتوباغو', 'la república de trinidad y tabago', 'trinidad y tabago', 'la république de trinité-et-tobago', '特立尼达和多巴哥共和国', 'trinidad and tobago', 'республика тринидад и тобаго', 'ترينيداد وتوباغو', 'тринидад и тобаго', 'the republic of trinidad and tobago', 'trinité-et-tobago', '特立尼达和多巴哥'],
         "Tunisia":['túnez', 'الجمهورية التونسية', 'la république tunisienne', 'تونس', 'тунис', '突尼斯', 'тунисская республика', 'tunisia', 'tunisie', '突尼斯共和国', 'republic of tunisia', 'la república de túnez', 'the republic of tunisia'],
         "Turkey":['турция', 'la république turque', 'la república de turquía', 'turquie', 'تركيا', 'турецкая республика', 'republic of turkey', 'جمهورية تركيا', '土耳其共和国', '土耳其', 'turkiye', 'turkey', 'the republic of turkey', 'turquía', 'birleşik-krallık-en-turkey'],
         "Turkmenistan":['turkménistan', 'turkmenistan', 'туркменистан', 'le turkménistan', '土库曼斯坦', 'turkmenistán', 'تركمانستان'],
         "Tuvalu":['图瓦卢', 'توفالو', 'тувалу', 'les tuvalu', 'tuvalu'],
-        "United States Minor Outlying Islands":["us minor outlying islands",'u-s-minor-outlying-islands'],
+        "US Minor Outlying Islands":['u-s-minor-outlying-islands'],
         "Uganda":['أوغندا', 'ouganda', '乌干达共和国', 'جمهورية أوغندا', 'the republic of uganda', 'republic of uganda', 'уганда', 'la república de uganda', 'uganda', '乌干达', "la république de l'ouganda", 'республика уганда'],
         "Ukraine":['乌克兰', 'ucrania', 'ukraine', 'أوكرانيا', 'украина', "l'ukraine"],
         "Union of the Comoros":['comoros', 'comores', 'اتحاد جزر القمر', '科摩罗联盟', 'the union of the comoros', 'коморские острова', '科摩罗', 'جزر القمر', 'союз коморских островов', 'union of the comoros', "l'union des comores", 'comoras', 'la unión de las comoras'],
         "United Arab Emirates":['الإمارات العربية المتحدة', 'émirats arabes unis', 'united arab emirates', 'the united arab emirates', 'объединенные арабские эмираты', 'emiratos árabes unidos', '阿拉伯联合酋长国', 'los emiratos árabes unidos', 'les émirats arabes unis'],
-        "United Kingdom":['royaume-uni', 'reino-unido', 'inglaterra', 'england', 'wales', "united great britain and northern ireland", "united great britain", "royaume-uni de grande-bretagne et d'irlande du nord", 'the united kingdom of great britain and northern ireland', 'el reino unido de gran bretaña e irlanda del norte', 'соединенное королевство великобритании и северной ирландии', 'united great britain and northern ireland', 'reino unido de gran bretaña e irlanda del norte', '大不列颠及北爱尔兰联合王国', 'united kingdom of great britain and northern ireland', "le royaume-uni de grande-bretagne et d'irlande du nord", 'المملكة المتحدة لبريطانيا العظمى وأيرلندا الشمالية'],
+        "United Great Britain and Northern Ireland":["royaume-uni de grande-bretagne et d'irlande du nord", 'the united kingdom of great britain and northern ireland', 'el reino unido de gran bretaña e irlanda del norte', 'соединенное королевство великобритании и северной ирландии', 'united great britain and northern ireland', 'reino unido de gran bretaña e irlanda del norte', '大不列颠及北爱尔兰联合王国', 'united kingdom of great britain and northern ireland', "le royaume-uni de grande-bretagne et d'irlande du nord", 'المملكة المتحدة لبريطانيا العظمى وأيرلندا الشمالية'],
+        "United Kingdom":['royaume-uni', 'reino-unido', 'inglaterra', 'england', 'wales'],
         "United Mexican States":['the united mexican states', 'الولايات المتحدة المكسيكية', 'mexico', 'المكسيك', 'united mexican states', 'les états-unis du mexique', 'méxico', 'мексика', 'mexique', '墨西哥', 'los estados unidos mexicanos', 'мексиканские соединенные штаты', '墨西哥合众国'],
         "United States":["united states of america", 'estados unidos', 'etats-unis', 'etats-unis', 'vereinigte-staaten-von-amerika', 'porto rico (états-unis)', 'états-unis', 'estados-unidos', 'vereinigte staaten von amerika', "les états-unis d'amérique", 'the united states of america', 'соединенные штаты америки', "états-unis d'amérique", '美利坚合众国', 'الولايات المتحدة الأمريكية', 'united states of america', 'los estados unidos de américa', 'estados unidos de américa'],
         "Uzbekistan":['узбекистан', '乌兹别克斯坦共和国', 'the republic of uzbekistan', "la république d'ouzbékistan", 'republic of uzbekistan', ' 乌兹别克斯坦', 'ouzbékistan', 'أوزبكستان', 'la república de uzbekistán', 'республика узбекистан', 'uzbekistán', 'جمهورية أوزبكستان', 'uzbekistan'],
         "Vanuatu":['瓦努阿图共和国', 'republic of vanuatu', 'فانواتو', 'the republic of vanuatu', 'вануату', 'республика вануату', 'la república de vanuatu', '瓦努阿图', 'جمهورية فانواتو', 'la république de vanuatu', 'vanuatu'],
-        "Venezuela":['венесуэла', 'боливарианская республика венесуэла', 'the bolivarian republic of venezuela', 'Venezuela', 'la república bolivariana de venezuela', '委内瑞拉玻利瓦尔共和国', 'فنزويلا', 'la république bolivarienne du venezuela', 'venezuela', 'جمهورية فنزويلا البوليفارية'],        
-        "Vietnam":['viêt nam', 'vietnam', "socialist viet nam", '越南', 'the socialist republic of viet nam', '越南社会主义共和国', 'socialist viet nam', 'viet nam', 'فييت نام', 'socialist republic of viet nam', 'вьетнам', 'социалистическая республика вьетнам', 'جمهورية فييت نام الاشتراكية', 'la république socialiste du viet nam', 'la república socialista de viet nam'],
+        "Venezuela":['венесуэла', 'боливарианская республика венесуэла', 'the bolivarian republic of venezuela', 'la república bolivariana de venezuela', '委内瑞拉玻利瓦尔共和国', 'فنزويلا', 'la république bolivarienne du venezuela', 'venezuela', 'جمهورية فنزويلا البوليفارية'],        
+        "Vietnam":['viêt nam', 'vietnam'],
         "Yemen":['la république du yémen', 'الجمهورية اليمنية', 'اليمن', 'la república del yemen', 'yemen', '也门', 'yémen', 'йемен', 'йеменская республика', 'the republic of yemen', 'republic of yemen', '也门共和国'],
-        "Yugoslavia":['yugoslavia', 'yugoslavie'],
+        "Yugoslavia":['yugoslavia'],
         "Zambia":['赞比亚', 'جمهورية زامبيا', 'la república de zambia', 'republic of zambia', 'zambie', '赞比亚共和国', 'республика замбия', 'زامبيا', 'la république de zambie', 'zambia', 'the republic of zambia', 'замбия'],
         "Zimbabwe":['la república de zimbabwe', 'zimbabwe', 'جمهورية زمبابوي', 'the republic of zimbabwe', 'зимбабве', '津巴布韦共和国', 'республика зимбабве', 'la république du zimbabwe', '津巴布韦', 'زمبابوي', 'republic of zimbabwe'],
         "the State of Eritrea":['إريتريا', 'государство эритрея', 'the state of eritrea', 'érythrée', 'دولة إريتريا', '厄立特里亚国', 'el estado de eritrea', '厄立特里亚', 'eritrea', 'эритрея', "l'état d'érythrée"]
     }
 
+countries_possibilities_save = {
+                            "Albania":['albanie'],
+                            "Algeria":['algerie', 'algérie'],
+                            "Argentina":['argentine'],
+                            "Armenia":['arménie'],
+                            "Australia":['null-australia', 'australie'],
+                            "Austria":['autriche'],
+                            "Azerbaijan":['azerbaïdjan'],
+                            "Bahamas":['the-bahamas'],
+                            "Bahrain":['bahreïn'],
+                            "Belarus":['biélorussie'],
+                            "Belgium":['belgica', 'belgie', 'belgien', 'belgio', 'belgique'],
+                            "Benin":['bénin'],
+                            "Bhutan":['bhoutan'],
+                            "Bolivia":['bolivie', 'bolivia'],
+                            "Bosnia And Herzegovina":['bosnia i hercegovina bosnian', 'bosnia-i-hercegovina-bosnian', 'bosnie-herzégovine', 'dominican republicvbosnia and herzegovina'],
+                            "Brazil":['brésil', 'brazil,pt'],
+                            "Bulgaria":['bulgarien', 'bulagria', 'bulgarie'],
+                            "Cambodia":['cambodge'],
+                            "Cameroon":['cameroon', 'cameroun'],
+                            "Central African Republic":['centrafrique'],
+                            "Chad":['tchad'],
+                            "Chile":['chile', 'chili'],
+                            "China":['chine', 'china'],
+                            "Colombia":['colombie'],
+                            "Comoros":['comores'],
+                            "Democratic Republic of the Congo":['congo, the democratic republic of the','république démocratique du congo', 'congo (rdc)', 'congo (kinshasa)'],
+                            "Republic of the Congo":['republic-of-the-congo', 'congo (brazzaville)', 'République du Congo'],
+                            "Croatia":['croatia', 'croacia', 'croatie'],
+                            "Cyprus":['κύπρο', 'chypre'],
+                            "Czech Republic":['česko', 'czech-republic', 'czech-repblik', 'czechy', 'czech-republi', 'république tchèque', 'czech republic'],
+                            "Democratic People's Republic of Korea":['korea'],
+                            "Democratic Republic Of The Congo":['democratic-democratic-republic-of-the-congo', 'democratic-republic-of-the-congo'],
+                            "Denmark":['danemark', 'dinamarca'],
+                            "Dominican Republic":['republica-dominicana-espanol', 'république dominicaine'],
+                            "Ecuador":['équateur'],
+                            "Egypt":['égypte'],
+                            "El Salvador":['salvador'],
+                            "Estonia":['estonie'],
+                            "Ethiopia":['éthiopie'],
+                            "European Union":['europa', 'europe'],
+                            "Finland":['suomi', 'finlande'],
+                            "France":['france', 'dom-tom', 'franca', 'francia', 'francja', 'frankreich', 'frankrijk', 'franța', 'paris', 'ranska'],
+                            "French Polynesia":['polinesia-francesa', 'polynesie-francaise'],
+                            "Gambia":['gambie'],
+                            "Georgia":['géorgie'],
+                            "Germany":['germany', 'alemania', 'germania', 'niemcy', 'deutschland', 'east-germany', 'allemagne'],
+                            "Greece":['grèce'],
+                            "Guadeloupe":['guadalupe'],
+                            "Guatemala":['guatemaltecos'],
+                            "Guinea":['guinee', 'guinée'],
+                            "Haiti":['haïti'],
+                            "Holy See":['vatican-city'],
+                            "Hong Kong":['hong kong (chine)'],
+                            "Hungary":['hungria', 'hungaria', 'hongrie'],
+                            "Iceland":['islande'],
+                            "India":['inda', 'indian-subcontinent', 'inde'],
+                            "Indonesia":['indonésie'],
+                            "Ireland":['irland-en-de', 'irlanda', 'irland', 'irlande'],
+                            "Israel":['ישראל', 'israël'],
+                            "Italy":['italia', 'italien', 'italy', 'andria', 'italie'],
+                            "Ivory Coast":['cote-d-ivoire'],
+                            "Jamaica":['jamaïque'],
+                            "Japan":['japon'],
+                            "Jordan":['الأردن', 'لأردن', 'jordanie'],
+                            "Korea":['korea-한국어'],
+                            "Kosovo":['kosovo', 'kosovo'],
+                            "Kurdistan irakien":['iraqi-kurdistan'],
+                            "Kuwait":['koweït'],
+                            "Kyrgyzstan":['kirghizistan'],
+                            "Latin America":['latinoamerica'],
+                            "Latvia":['lettonie'],
+                            "Lebanon":['liban'],
+                            "Libya":['libye'],
+                            "Lithuania":['lituanie'],
+                            "Luxembourg":['luxemburgo'],
+                            "Malaysia":['malay', 'malaisie'],
+                            "Malta":['malte'],
+                            "Martinique":['martinica'],
+                            "Mauritania":['mauritanie'],
+                            "Mauritius":['maurice'],
+                            "Mexico":['mexique', 'mexixco', 'tijuana-baja-california'],
+                            "Moldova":['moldavie', 'moldova'],
+                            "Mongolia":['mongolia', 'mongolie'],
+                            "Montenegro":['monténégro'],
+                            "Morocco":['maroc', 'marruecos', 'marokko', 'moroccov', 'المغرب', 'morocco'],
+                            "Myanmar":['myanmar (birmanie)'],
+                            "Namibia":['namibie'],
+                            "Nepal":['népal'],
+                            "Netherlands":['niederlande', 'paises bajos', 'nederland', 'pays-bas'],
+                            "New Caledonia":['nouvelle-caledonie'],
+                            "New Zealand":['new-zealand-english', 'new zealand', 'nouvelle-zélande'],
+                            "North Macedonia":['republic-of-macedonia', 'north macedonia'],
+                            "Northern Cyprus":['turkish republic of northern cyprus','republic of northern cyprus','chypre du nord', 'northern cyprus'],
+                            "Republic of Cyprus":['republic of cyprus','chypre', 'cyprus', 'république de chypre', 'kυπριακή Δημοκρατία', 'kıbrıs cumhuriyeti'],
+                            "Norway":['oslo', 'norvège'],
+                            "Peru":['pérou'],
+                            "Poland":['poland', 'polonia', 'pologne', 'polska', 'polen', 'poland-polski', 'poland-romania'],
+                            "Portugal":['portugal'],
+                            "Republic of China":['republic of china','taïwan', 'taiwan', 'république de chine', 'zhōnghuá mínguó', '中華民國', "Taiwan",'taïwan', 'taiwan'],
+                            "Reunion":['la reunion', 'la-reunion'],
+                            "Romania":['romanina', 'romaniaă', 'roumanie'],
+                            "Russian Federation":['soviet-union', 'russia-русский', 'rusia', 'russie'],
+                            "Saudi Arabia":['arabie saoudite'],
+                            "Senegal":['sénégal'],
+                            "Serbia":['serbie'],
+                            "Singapore":['singapour'],
+                            "Slovakia":['slowakai', 'slovaquie', 'slovénie'],
+                            "Slovenia":['slowenien', 'eslovenia'],
+                            "Somalia":['somalie', 'somaliland'],
+                            "South Africa":['afrique du sud'],
+                            "South Korea":['corée du sud', 'south korea'],
+                            "South Sudan":['soudan du sud'],
+                            "Spain":['espa�a', 'espagne', 'spagna', 'españa', 'spain', 'espanha', 'spanien'],
+                            "State of Palestine":['palestinian territories', 'palestinian territories', 'palestinian-territories', 'فلسطين'],
+                            "Sudan":['soudan'],
+                            "Sweden":['sverige', 'schweden', 'suecia', 'swaziland', 'suède'],
+                            "Switzerland":['svizzera', 'suisse', 'szwajcaria', 'svizzera', 'schweiz', 'suiza', 'swiss'],
+                            "Syria":['syrie'],
+                            "Tajikistan":['tadjikistan'],
+                            "Tanzania":['tanzanie'],
+                            "Thailand":['thailande', 'thaïlande'],
+                            "Republic of Trinidad and Tobago":['trinidad-tobagot-english', 'trinité-et-tobago', 'trinidad & tobago', 'Trinité-et-Tobago','republic of trinidad and tobago','trinidad and tobago'],
+                            "Tunisia":['tunisia', 'tunisie', 'تونس'],
+                            "Turkey":['birleşik-krallık-en-turkey', 'turquie', 'turkiye'],
+                            "Turkmenistan":['turkménistan'],
+                            "US Minor Outlying Islands":['u-s-minor-outlying-islands'],
+                            "Uganda":['ouganda'],
+                            "United Arab Emirates":['émirats arabes unis'],
+                            "United Kingdom":['royaume-uni', 'reino-unido', 'inglaterra', 'england', 'wales'],
+                            "United Republic of Tanzania":['tanzania'],
+                            "United States":['estados unidos', 'etats-unis', 'etats-unis', 'vereinigte-staaten-von-amerika', 'porto rico (états-unis)', 'états-unis', 'estados-unidos', 'vereinigte staaten von amerika'],
+                            "Uzbekistan":['ouzbékistan'],
+                            "Vietnam":['viêt nam', 'vietnam'],
+                            "Yemen":['yémen'],
+                            "Yugoslavia":['yugoslavia'],
+                            "Zambia":['zambie']
+                            }
 _correspondance_with_official_name_lower_keys = defaultdict(list)
-
+                            
 
 # ---------------------------------------------------------------------------------------------
 # Correction des pays qui sont en erreur dans la librairie
@@ -318,27 +466,6 @@ _dic_alpha2 = {
                 'virgin islands of the united states': ('VI', 'NA'), 
                 'maldives' : ('MV','AS')
                 }
-
-_manuelly_dic = {"kosovo": ("XK", "XXK","EU"),
-                 "western sahara": ("EH", "ESH","AF"),
-                 "reunion" : ("RE","REU", "AF"),
-                 'central african':("CF","CAF", "AF"),
-                 'state of palestine':("PS","PSE", "AS"),
-                 'palestine':("PS","PSE", "AS"),
-                 'democratic sao tome and principe':("ST","STP", "AF"),
-                 'sao tome and principe':("ST","STP", "AF"),
-                 'tome and principe':("ST","STP", "AF"),
-                 "timor-leste":("TL","TLS", "AS"),
-                 "democratic timor-leste":("TL","TLS", "AS"),
-                 'dominican':("DO","DOM", "NA"),
-                 'syrian arab republic': ('SY','SYR', 'AS'),
-                 "united states minor outlying islands": ('UM','UMI', 'NA'),
-                 "yugoslavia": ('YU','YUG', 'EU'),
-                 "holy see": ('VA','VAT', 'EU'),
-                 "brazil": ('BR','BRA', 'AS')
-                 }
-
-_country_to_correct_manually = list(_manuelly_dic.keys())
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                              FUNCTION
@@ -509,8 +636,33 @@ def get_country_data(country_name_param, geolocator=None, include_format=False, 
     if official_name is None:
         official_name = get_country_official_name(country_name, alpha2, alpha3)
 
-    if country_name.lower() in _country_to_correct_manually:
-        alpha2, alpha3, official_name, continent_code = _manually_correct(country_name, alpha2, alpha3, official_name, continent_code, verbose=verbose)
+    if "Kosovo".lower() in country_name.lower():
+        if alpha2 is None or isinstance(alpha2, float) or len(alpha2)==0:
+            alpha2 = "XK"
+        if alpha3 is None or isinstance(alpha3, float) or len(alpha3)==0:
+            alpha3 = "XXK"
+        if official_name is None or isinstance(official_name, float) or len(official_name)==0:
+            official_name = country_name
+        if continent_code is None or isinstance(continent_code, float) or len(continent_code)==0:
+            continent_code = "EU"
+    elif "Western Sahara".lower() in country_name.lower():
+        if alpha2 is None or isinstance(alpha2, float) or len(alpha2)==0:
+            alpha2 = "EH"
+        if alpha3 is None or isinstance(alpha3, float) or len(alpha3)==0:
+            alpha3 = "ESH"
+        if official_name is None or isinstance(official_name, float) or len(official_name)==0:
+            official_name = country_name
+        if continent_code is None or isinstance(continent_code, float) or len(continent_code)==0:
+            continent_code = "AF"
+    elif "Reunion".lower()  in country_name.lower():
+        if alpha2 is None or isinstance(alpha2, float) or len(alpha2)==0:
+            alpha2 = "RE"
+        if alpha3 is None or isinstance(alpha3, float) or len(alpha3)==0:
+            alpha3 = "REU"
+        if official_name is None or isinstance(official_name, float) or len(official_name)==0:
+            official_name = country_name
+        if continent_code is None or isinstance(continent_code, float) or len(continent_code)==0:
+            continent_code = "AF"
     
     # Récupération des coordonnées
     if alpha2 != np.nan and continent_code != np.nan:
@@ -542,33 +694,6 @@ def get_country_data(country_name_param, geolocator=None, include_format=False, 
 # ---------------------------------------------------------------------------------------------
 #                               MAIN
 # ---------------------------------------------------------------------------------------------
-
-def _manually_correct(country_name, alpha2, alpha3, official_name, continent_code, verbose=0):
-    try:
-        if alpha2 is None or len(str(alpha2)) == 0 or np.isnan(alpha2):
-            alpha2 = _manuelly_dic.get(country_name.lower(), (np.nan, np.nan, np.nan))[0]
-    except Exception as error:
-        if verbose:
-            print(f"alpha2 = {alpha2}=>{error}")
-    try:
-        if alpha3 is None or len(str(alpha3)) == 0 or '-99' in str(alpha3) or np.isnan(alpha3):
-            alpha3 = _manuelly_dic.get(country_name.lower(), (np.nan, np.nan, np.nan))[1]
-    except Exception as error:
-        if verbose:
-            print(f"alpha3 = {alpha3}=>{error}")
-    try:
-        if official_name is None or len(str(official_name)) == 0 or np.isnan(official_name):
-            official_name = country_name
-    except Exception as error:
-        if verbose:
-            print(f"official_name = {official_name}=>{error}")
-    try:
-        if continent_code is None or len(str(continent_code)) == 0 or np.isnan(continent_code):
-            continent_code =  _manuelly_dic.get(country_name.lower(), (np.nan, np.nan, np.nan))[2]
-    except Exception as error:
-        if verbose:
-            print(f"continent_code = {continent_code}=>{error}")
-    return alpha2, alpha3, official_name, continent_code
 
 def __get_country_alpha3_with_name(country_name, verbose=False):
     alpha3 = None
@@ -610,11 +735,8 @@ def __get_country_official_name_with_name(country_name, verbose=False, correct=F
         if official_name is None and not lower:
             official_name = __get_country_official_name_with_name(country_name.lower(), verbose=verbose, correct=True, lower=True)
             
-    if official_name is None:
-        if correct and not lower:
-            official_name = country_name
-        elif verbose and not lower:
-            print("official_name FAIL => ", country_name)
+    if official_name is None and verbose:
+        print("official_name FAIL => ", country_name)
     return official_name
 
 

@@ -17,10 +17,7 @@ def get_country_df(verbose=0, json_file_path = r"C:\Users\User\WORK\workspace-ia
     features = info.get('features', None)
     res = defaultdict(list)
 
-    ever_proceed = ["Northern Cyprus".lower(), 'Somaliland'.lower(), 'Argentine'.lower(), 'European Union'.lower(), 
-                    'The Republic of Cyprus'.lower(), 'Eastern Uruguay'.lower(), 'Federative Brazil'.lower(), 'Gabonese'.lower(),
-                    'Hellenic'.lower()
-                    ]
+    ever_proceed = []
 
 
     if features is not None:
@@ -30,47 +27,29 @@ def get_country_df(verbose=0, json_file_path = r"C:\Users\User\WORK\workspace-ia
                 props = country_feature.get("properties")
                 if props is not None:
                     country_name = props.get("name", None)
-                    if country_name is not None and country_name.lower() not in ever_proceed:
+                    if country_name is not None:
                         country_code, continent_code, latitude, longitude, a3, official_name, country_id = get_country_data(country_name, alpha3_param=alpha3, verbose=verbose)
                         res["id"].append(country_id)
-                        try:
-                            if alpha3 is None or len(str(alpha3)) == 0 or '-99' in str(alpha3) or np.isnan(alpha3):
-                                res["alpha3"].append(a3)
-                            else:
-                                res["alpha3"].append(alpha3)
-                        except Exception as error:
-                            if verbose:
-                                print(f"alpha3 = {alpha3}=>{error}")
+                        if alpha3 is None:
+                            res["alpha3"].append(a3)
+                        else:
                             res["alpha3"].append(alpha3)
-                        
                         res["alpha2"].append(country_code)
                         res["country"].append(country_name)
                         res["country_official"].append(official_name)
                         res["continent_code"].append(continent_code)
                         res["latitude"].append(latitude)
                         res["longitude"].append(longitude)
-                        ever_proceed.append(official_name.lower())
-                        ever_proceed.append(country_name.lower())
+                        ever_proceed.append(official_name)
     if verbose:
         print(f"{len(ever_proceed)} pays ajouté à partir fichier json")
-
-    # Nettoyage de la mémoire
-    alpha3 = None
-    props = None
-    json_file_path = None
-    json_data = None
-    info = None
-    country_feature = None
 
     # traitement des pays qui ne seraient pas dans le fichier json
     nb_c = 0
     for country_name in tqdm(countries_possibilities.keys()):
-        if country_name.lower() not in ever_proceed:
+        if country_name not in ever_proceed:
             country_code, continent_code, latitude, longitude, a3, official_name, country_id = get_country_data(country_name, verbose=verbose)
-            if official_name is None:
-                official_name = country_name
-
-            if official_name.lower() not in ever_proceed:
+            if official_name not in ever_proceed:
                 res["id"].append(country_id)
                 res["alpha3"].append(a3)
                 res["alpha2"].append(country_code)
@@ -81,11 +60,10 @@ def get_country_df(verbose=0, json_file_path = r"C:\Users\User\WORK\workspace-ia
                 res["longitude"].append(longitude)
                 ever_proceed.append(official_name)
                 nb_c += 1
-    if verbose:
-        print(f"{nb_c} pays ajouté en plus du fichier json")
+    # if verbose:
+    print(f"{nb_c} pays ajouté en plus du fichier json, soit {len(ever_proceed)} pays en tout.")
 
     df = pd.DataFrame.from_dict(res)
-    df = df.sort_values(by="country_official")
     return df
 
 
