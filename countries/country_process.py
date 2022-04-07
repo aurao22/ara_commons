@@ -21,8 +21,7 @@ def get_country_df(verbose=0, json_file_path = r"C:\Users\User\WORK\workspace-ia
                     'The Republic of Cyprus'.lower(), 'Eastern Uruguay'.lower(), 'Federative Brazil'.lower(), 'Gabonese'.lower(),
                     'Hellenic'.lower()
                     ]
-
-
+    
     if features is not None:
         for country_feature in tqdm(features):
             alpha3 = country_feature.get("id", None)
