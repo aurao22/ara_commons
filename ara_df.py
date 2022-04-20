@@ -3,6 +3,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
+import csv
 
 
 def get_numeric_columns_names(df, verbose=False):
@@ -68,8 +69,35 @@ def remove_empty_numeric_columns(df, verbose=True, inplace=True, min_nunique_val
     print("remove_empty_columns, shape start: ",shape_start,"=>",shape_end," ............................................... END")        
     return df  
 
+def get_na_columns_classement(df, verbose=0):
+    """Supprime les colonnes qui ont un pourcentage de NA supérieur au max_na
 
-def remove_na_columns(df, max_na=73, verbose=True, inplace=True):
+    Args:
+        df (DataFrame): Données à nettoyer
+        max_na (int) : pourcentage de NA maximum accepté (qui sera conserver)
+        verbose (bool, optional): Mode debug. Defaults to False.
+        inplace (bool, optional): Pour mettre à jour la dataframe reçue directement. Defaults to True.
+
+    Returns:
+        [DataFrame]: DataFrame avec les données mises à jour
+    """      
+    dict_col = {}
+
+    # Constitution de la list des colonnes à supprimer
+    for col in df.columns:
+        pourcent = int((df[col].isna().sum()*100)/df.shape[0])
+        list = dict_col.get(pourcent, [])
+        list.append(col)
+        dict_col[pourcent] = list
+            
+    if verbose:
+        for k in range(101):
+            if len(dict_col.get(k, [])) > 0:
+                print(k, "=>", len(dict_col.get(k, [])), dict_col.get(k, []))   
+    return dict_col 
+
+
+def remove_na_columns(df, max_na=73, excluded_cols=[], verbose=True, inplace=True):
     """Supprime les colonnes qui ont un pourcentage de NA supérieur au max_na
 
     Args:
@@ -93,7 +121,7 @@ def remove_na_columns(df, max_na=73, verbose=True, inplace=True):
         list = dict_col.get(pourcent, [])
         list.append(col)
         dict_col[pourcent] = list
-        if pourcent > max_na:
+        if pourcent > max_na and col not in excluded_cols:
             to_remove.add(col)
     
     if verbose:
@@ -104,6 +132,7 @@ def remove_na_columns(df, max_na=73, verbose=True, inplace=True):
     shape_start = df.shape
     # Suppression des colonnes
     df.drop(to_remove, axis=1, inplace=True)
+    print(f"Removed : {to_remove}")
     shape_end = df.shape
     
     print("remove_na_columns, shape start: ",shape_start,"=>",shape_end,"s............................................... END")        
@@ -126,3 +155,13 @@ def process_one_hot(df, col="description", verbose=0):
     if verbose:
         print("ohe_df:", ohe_df.shape, "data:", df.shape, "data_encode:", df_completed.shape)
     return df_completed
+
+
+from datetime import datetime
+
+def save_df_in_file(df_to_save, file_path):
+    now = datetime.now() # current date and time
+    date_time = now.strftime("%Y-%m-%d-%H_%M_%S")
+    path = file_path+"_" + date_time + '.csv'
+    df_to_save.to_csv(path, quoting=csv.QUOTE_NONNUMERIC, sep=',', index=False)
+    return path
