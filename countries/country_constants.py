@@ -329,7 +329,8 @@ _manuelly_dic = {"kosovo": ("XK", "XXK","EU"),
                  'trinidad and tobago': ('TT', 'TTO', 'SA'), 
                  'united kingdom': ('GB', 'GBR', 'EU'), 
                  'virgin islands of the united states': ('VI', 'VIR', 'NA'), 
-                 'maldives' : ('MV', 'MDV','AS')
+                 'maldives' : ('MV', 'MDV','AS'),
+                 'united states of america':('US', 'USA','NA')
                  }
 
 _country_to_correct_manually = list(_manuelly_dic.keys())

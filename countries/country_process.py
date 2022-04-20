@@ -87,11 +87,12 @@ def get_country_df(verbose=0, json_file_path = r"C:\Users\User\WORK\workspace-ia
     df = df.sort_values(by="country_official")
     return df
 
+import csv
 
 def save_df_in_file(df_to_save, file_path):
     now = datetime.now() # current date and time
     date_time = now.strftime("%Y-%m-%d-%H_%M_%S")
-    df_to_save.to_csv(file_path+"_" + date_time + '.csv', sep=',', index=False)
+    df_to_save.to_csv(file_path+"_" + date_time + '.csv', quoting=csv.QUOTE_NONNUMERIC, sep=',', index=False)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                                              TESTS
