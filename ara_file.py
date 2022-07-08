@@ -26,6 +26,32 @@ def get_sub_dir(dir_path, verbose=0):
     from glob import glob
     return glob(dir_path+ "/*/", recursive = True)
 
+
+from tensorflow import compat
+
+def del_corrupt_img(dir_path, include_sub_dir=0, verbose=0):
+    
+    removed_files = []
+    fichiers = get_dir_files(dir_path=dir_path, include_sub_dir=include_sub_dir, verbose=verbose-1)
+        
+    for fname in fichiers:
+        is_jfif = False
+        fpath = join(dir_path, fname)
+        try:
+            fobj = open(fpath, "rb")
+            is_jfif = compat.as_bytes("JFIF") in fobj.peek(10)
+        finally:
+            fobj.close()
+
+        if not is_jfif:
+            removed_files.append(fpath)
+            # Delete corrupted image
+            remove_file(fpath)
+
+    if verbose: print(f"Deleted {len(removed_files)} images.")
+    return removed_files
+
+
 def get_dir_files(dir_path, endwith=None, include_sub_dir=0, verbose=0):
 
     fichiers = []
@@ -113,35 +139,12 @@ def get_files_to_load(file_df, source_data_path=None, suffix=".csv", new_files=N
     return new_files_df
 
 
-def corrupted_img(path, apply_remove=False, verbose=0):
-    num_skipped = 0
-    to_remove = []
-    for folder_name in get_sub_dir(path, verbose=verbose-1):
-        folder_path = join(path, folder_name)
-        for fname in listdir(folder_path):
-            fpath = join(folder_path, fname)
-            try:
-                fobj = open(fpath, "rb")
-                is_jfif = tf.compat.as_bytes("JFIF") in fobj.peek(10)
-            finally:
-                fobj.close()
-
-            if not is_jfif:
-                num_skipped += 1
-                to_remove.remove(fpath)
-                # Delete corrupted image
-                if apply_remove:
-                    remove(fpath)
-    print(f"{num_skipped} corrupted images.")
-    return to_remove
-
 def add_loaded_files(file_df, loaded_files, verbose=0):
     file_df = pd.concat([file_df, loaded_files])
     if verbose:
         print("Proceeded files:", file_df.shape)
         print(file_df)
     return file_df
-
 
 
 def save_files(file_df, loaded_files, verbose=0):
@@ -151,14 +154,10 @@ def save_files(file_df, loaded_files, verbose=0):
         print(file_df)
     return file_df
 
-
-
-
-
 def remove_file(file_path):
     try:
         if path.exists(file_path):
-            remove(file_path)
+            return remove(file_path)
     except OSError as e:
         print(e)
 
