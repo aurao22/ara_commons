@@ -207,3 +207,15 @@ def _draw_pie(df, column_name, axe, colors=None, legend=True, verbose=False):
         legend.remove()
     axe.set_title(column_name)
     axe.set_facecolor(PLOT_BAGROUNG_COLOR)
+
+
+from matplotlib import colors as mcolors
+
+def get_color_names():
+    colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+
+    # Sort colors by hue, saturation, value and name.
+    by_hsv = sorted((tuple(mcolors.rgb_to_hsv(mcolors.to_rgba(color)[:3])), name)
+                    for name, color in colors.items())
+    sorted_names = [name for hsv, name in by_hsv]
+    return sorted_names
