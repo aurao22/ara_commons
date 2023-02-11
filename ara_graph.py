@@ -5,28 +5,11 @@ from matplotlib.ticker import FuncFormatter
 import seaborn as sns
 from matplotlib import cm
 
+from util_graph import *
+
 # ----------------------------------------------------------------------------------
 #                        GRAPHIQUES
 # ----------------------------------------------------------------------------------
-PLOT_FIGURE_BAGROUNG_COLOR = 'white'
-PLOT_BAGROUNG_COLOR = PLOT_FIGURE_BAGROUNG_COLOR
-
-
-def color_graph_background(ligne=1, colonne=1):
-    figure, axes = plt.subplots(ligne,colonne)
-    figure.patch.set_facecolor(PLOT_FIGURE_BAGROUNG_COLOR)
-    if isinstance(axes, np.ndarray):
-        for axe in axes:
-            # Traitement des figures avec plusieurs lignes
-            if isinstance(axe, np.ndarray):
-                for ae in axe:
-                    ae.set_facecolor(PLOT_BAGROUNG_COLOR)
-            else:
-                axe.set_facecolor(PLOT_BAGROUNG_COLOR)
-    else:
-        axes.set_facecolor(PLOT_BAGROUNG_COLOR)
-    return figure, axes
-
 
 def draw_correlation_graphe(df, title, verbose=False, annot=True, fontsize=5):
     """Dessine le graphe de corrélation des données
@@ -208,14 +191,3 @@ def _draw_pie(df, column_name, axe, colors=None, legend=True, verbose=False):
     axe.set_title(column_name)
     axe.set_facecolor(PLOT_BAGROUNG_COLOR)
 
-
-from matplotlib import colors as mcolors
-
-def get_color_names():
-    colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
-
-    # Sort colors by hue, saturation, value and name.
-    by_hsv = sorted((tuple(mcolors.rgb_to_hsv(mcolors.to_rgba(color)[:3])), name)
-                    for name, color in colors.items())
-    sorted_names = [name for hsv, name in by_hsv]
-    return sorted_names

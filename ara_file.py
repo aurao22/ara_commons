@@ -4,28 +4,7 @@ from os.path import isfile, join, isdir, exists, getsize
 from pathlib import Path  
 from glob import glob
 
-def get_dir_name(dir_path, endwith=None, verbose=0):
-    """Liste les noms de répertoires contenu dans le répertoire reçu
-
-    Args:
-        dir_path (str): path du répertoire à scanner
-        endwith (str, optional): chaine recherchée en fin de nom. Defaults to None.
-        verbose (int, optional): log level. Defaults to 0.
-
-    Returns:
-        list(str): _description_
-    """
-    dirs = None
-    if endwith is not None:
-        dirs = [f for f in listdir(dir_path) if isdir(join(dir_path, f)) and f.endswith(endwith)]
-    else:
-        dirs = [f for f in listdir(dir_path) if isdir(join(dir_path, f))]
-    return dirs
-
-def get_sub_dir(dir_path, verbose=0):
-    from glob import glob
-    return glob(dir_path+ "/*/", recursive = True)
-
+from util_file import *
 
 from tensorflow import compat
 
@@ -52,45 +31,6 @@ def del_corrupt_img(dir_path, include_sub_dir=0, verbose=0):
     return removed_files
 
 
-def get_dir_files(dir_path, endwith=None, include_sub_dir=0, verbose=0):
-
-    fichiers = []
-
-    if include_sub_dir > 0:
-        first_level_sub_dir = get_sub_dir(dir_path, verbose=verbose-1)
-        if len(first_level_sub_dir) > 0:
-            for sub_dir in first_level_sub_dir:
-                sub_f = get_dir_files(sub_dir, endwith=endwith, include_sub_dir=include_sub_dir-1, verbose=verbose)
-                fichiers.extend([join(sub_dir, f) for f in sub_f])
-        fichiers.extend(get_dir_files(dir_path, endwith=endwith, include_sub_dir=0, verbose=verbose))
-    else:
-        if endwith is not None:
-            if isinstance(endwith, str):
-                fichiers = [f for f in listdir(dir_path) if isfile(join(dir_path, f)) and f.endswith(endwith)]
-            elif isinstance(endwith, list):
-                for en in endwith:
-                    fichiers.extends(get_dir_files(dir_path=dir_path, endwith=en, verbose=verbose))
-        else:
-            fichiers = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
-    return fichiers
-
-def get_file_name_without_path_and_ext(file):
-    """Supprime le chemin et l'extension pour ne retourner que le nom du fichier
-
-    Args:
-        file (str or list(str)): fichier ou liste de fichiers
-
-    Returns:
-        str or list(str): nom du fichier
-    """
-    res = None
-    if isinstance(file, str):
-        res = Path(file).stem
-    elif isinstance(file, list):
-        res = [Path(text).stem for text in file]
-    return res
-
-
 def list_dir_files(dir_path, endwith=None, verbose=0):
     end = "*"
     if endwith is not None:
@@ -98,15 +38,6 @@ def list_dir_files(dir_path, endwith=None, verbose=0):
 
     files = glob.glob(f"{dir_path}/*.{end}")
     return files
-
-
-def get_dir_files_old(dir_path, endwith=None, verbose=0):
-    fichiers = None
-    if endwith is not None:
-        fichiers = [f for f in listdir(dir_path) if isfile(join(dir_path, f)) and f.endswith(endwith)]
-    else:
-        fichiers = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
-    return fichiers
 
 def get_file_list_df(file_df_path, force_reloading=False, verbose=0):
 
